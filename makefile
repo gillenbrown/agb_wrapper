@@ -1,4 +1,4 @@
-home_dir = /Users/gillenb/google_drive/research/agb/agb_wrapper
+home_dir = /Users/gillenb/google_drive/research/agb/agb_wrapper/
 source_dir = /Users/gillenb/code/art_cluster/src/sf/models/
 
 file_name = feedback.detailed_enrich
@@ -8,7 +8,7 @@ py_build_file = agb_build.py
 output_prefix = _agb
 # ^ found in $(py_build_file)
 
-target_names = $(file_name).o $(output_prefix).c $(output_prefix).cpython-35m-darwin.so $(output_prefix).o  
+target_names = $(file_name).o $(output_prefix).c $(output_prefix).cpython-37m-darwin.so $(output_prefix).o  
 
 $(info $(target_names))
 
