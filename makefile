@@ -1,4 +1,4 @@
-home_dir = /Users/gillenb/code/agb_wrapper/
+home_dir = /Users/gillenb/google_drive/research/agb/agb_wrapper
 source_dir = /Users/gillenb/code/art_cluster/src/sf/models/
 
 file_name = feedback.detailed_enrich
