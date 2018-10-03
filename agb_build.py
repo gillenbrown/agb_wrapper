@@ -16,7 +16,7 @@ ffibuilder.cdef("void init_agb(void);"
 # issues in the full ART compilation. I don't want to risk that. It gets 
 # included below anyway. 
 
-ffibuilder.set_source("_agb",  # name of the output C extension
+ffibuilder.set_source("art_enrich",  # name of the output C extension
                       '#include "feedback.detailed_enrich.h"',
                       define_macros=[("TEST_FLAG", None)],    
                       sources=['feedback.detailed_enrich.c'])   

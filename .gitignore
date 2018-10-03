@@ -1,6 +1,6 @@
 # this project specific
 *.o
-_agb.*
+art_enrich.*
 
 # Pycharm stuff
 .idea/

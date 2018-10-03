@@ -1,8 +1,11 @@
+import sys, os
+sys.path.append(os.path.abspath("../"))
+
 import pytest
-from _agb.lib import get_ejecta_rate, read_in_check
+from art_enrich import lib as agb
 
 # We need to initialize the table by doing the read in.
-read_in_check()
+agb.read_in_check()
 
 n_fields = 5
 z_values = [0.0001, 0.001, 0.006, 0.01, 0.02]
@@ -43,7 +46,7 @@ exact_value_zs = [0.0001, 0.02]
 @pytest.mark.parametrize("age", [-1, -1E6, -1E12])
 @pytest.mark.parametrize("z", testing_zs + [-0.005, 0.5])
 def test_negative_age(age, z):
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == 0
 
@@ -51,7 +54,7 @@ def test_negative_age(age, z):
 @pytest.mark.parametrize("z", testing_zs + [-0.005, 0.5])
 def test_early_age(age, z):
     """Rates should be zero at early times before AGB are active."""
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == 0
 
@@ -64,7 +67,7 @@ def test_early_age(age, z):
                           (0.02,   exact_values[0.02][14E9])])
 def test_very_late_age(age, z, answer):
     """Rates should be equal to the last timestep"""
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == answer[idx]
 
@@ -74,7 +77,7 @@ def test_very_late_age(age, z, answer):
                           (arb_age_2, exact_values[0.0001][arb_age_2])])
 def test_low_metallicity(age, z, answer):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == answer[idx]
 
@@ -84,7 +87,7 @@ def test_low_metallicity(age, z, answer):
                           (arb_age_2, exact_values[0.02][arb_age_2])])
 def test_high_metallicity(age, z, answer):
     """Metallicity more than the maximum should use the yields for maximum z"""
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == answer[idx]
 
@@ -97,7 +100,7 @@ def test_low_z_late_time(age, z):
     """No matter what, if we are past the last time and at low metallicity,
     we should have the same rate as the low z late time output."""
     answer = exact_values[0.0001][14E9]
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == answer[idx]
 
@@ -107,7 +110,7 @@ def test_high_z_late_time(age, z):
     """No matter what, if we are past the last time and at low metallicity,
     we should have the same rate as the low z late time output."""
     answer = exact_values[0.02][14E9]
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == answer[idx]
 
@@ -124,7 +127,7 @@ def test_double_alignment(age, z):
     metallicity steps.
     """
     answer = exact_values[z][age]
-    rates = get_ejecta_rate(age, z)
+    rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == answer[idx]
 #
