@@ -8,7 +8,8 @@ ffibuilder.cdef("void init_agb(void);"
                 "int *find_age_bound_idxs(double);"
                 "double read_in_check(void);"
                 "double get_ages(int);"
-                "int guess_age_idx(double);")
+                "int guess_age_idx(double);"
+                "double *get_ejecta_timestep(double, double, double, double);")
 # in the .c file, order does matter for this compilation. In the full context of
 # ART it doesn't matter, since the .h file will be imported by the SF recipe.
 # But here, I'm only compiling this snippet, and so the order does matter. I 

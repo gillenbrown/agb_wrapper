@@ -1,6 +1,7 @@
 # this project specific
 *.o
 art_enrich.*
+testing/plots/*
 
 # Pycharm stuff
 .idea/
