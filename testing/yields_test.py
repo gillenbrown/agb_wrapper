@@ -7,6 +7,9 @@ from art_enrich import lib as agb
 # We need to initialize the table by doing the read in.
 agb.read_in_check()
 
+r_tol = 1E-8
+a_tol = 0
+
 n_fields = 5
 z_values = [0.0001, 0.001, 0.006, 0.01, 0.02]
 
@@ -130,11 +133,54 @@ def test_double_alignment(age, z):
     rates = agb.get_ejecta_rate(age, z)
     for idx in range(n_fields):
         assert rates[idx] == answer[idx]
-#
-# def test_age_alignment():
-#
-#
-# def test_z_alignment():
-#
-#
-# def test_nonalignment():
+
+@pytest.mark.parametrize("z,answer",
+                         [(0.00055, [3.09117e-13, 1.597165e-12, 7.01507e-13,
+                                     9.038095e-15, 2.715225e-12]),
+                          (0.005, [2.394706e-13, 2.896638e-12, 2.505184e-12,
+                                   7.985132e-14, 6.4357940e-12]),
+                          (0.007, [2.762215e-13, 3.8769875e-12, 3.0566825e-12,
+                                   2.67147225e-13, 8.811905e-12]),
+                          (0.015, [4.177815e-13, 7.12888e-12, 5.439345e-12,
+                                   1.1479675e-12, 1.78976e-11])])
+def test_age_alignment(z,answer):
+    """
+    Test when the age matches one of the ages, but the metallicity does not.
+    These are calculated by hand.
+    """
+    age = 4.87735e+07
+    rates = agb.get_ejecta_rate(age, z)
+    for idx in range(n_fields):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+@pytest.mark.parametrize("age,answer",
+                         [(1E8, [1.11721345e-13, 9.4988731e-13, 1.82078847e-12,
+                                 4.4600222442673606e-14, 3.26713668076109e-12]),
+                          (1.38116e9, [2.30691e-13, 1.216195e-14, 2.287855e-13,
+                                       2.666265e-15, 5.0098e-13])])
+def test_z_alignment(age, answer):
+    """
+    Test when the age matches one of the metallicities, but the age does not.
+    These are calculated by hand.
+    """
+    z = 0.006
+    rates = agb.get_ejecta_rate(age, z)
+    for idx in range(n_fields):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+@pytest.mark.parametrize("age,z,answer",
+                         [(1.18941e10, 0.00055, [2.46099725e-14, 2.53411425e-16,
+                                                 6.2606475e-15, 1.669699250e-17,
+                                                 3.13173275e-14]),
+                          (1E9, 0.017, [5.934036074380165e-13,
+                                        9.672938628099173e-14,
+                                        5.528954140495868e-13,
+                                        5.3083009256198344e-14,
+                                        1.4929106446280992e-12])])
+def test_nonalignment(age, z, answer):
+    """Test when neither age or metallicity are aligned, as will typically
+    be the case. I only do a few tests here since it's a lot of work to
+    calculate by hand."""
+    rates = agb.get_ejecta_rate(age, z)
+    for idx in range(n_fields):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
