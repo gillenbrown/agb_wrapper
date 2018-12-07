@@ -2,138 +2,452 @@ import sys, os
 sys.path.append(os.path.abspath("../"))
 
 import pytest
-from art_enrich import lib as agb
+import numpy as np
+
+from art_enrich import lib as tab
 
 # We need to initialize the table by doing the read in.
-agb.read_in_check()
+tab.init_detailed_enrichment()
 
 r_tol = 1E-8
 a_tol = 0
 
-n_fields = 5
-z_values = [0.0001, 0.001, 0.006, 0.01, 0.02]
+n_fields_agb = 6
+n_fields_sn_ii = 5
+n_fields_winds = 1
+z_values_agb = [0.0001, 0.001, 0.006, 0.01, 0.02]
+z_values_sn_ii = [0, 0.001, 0.004, 0.02]
 
-testing_ages = [0, 30E6, 100E6, 1E9, 13.9E9, 14E9]
-testing_zs = z_values + [0, 0.00001, 0.0005, 0.005, 0.009, 0.015, 0.03]
+# ------------------------------------------------------------------------------
+#
+# metallicity index checking
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("z, true_idx_0, true_idx_1",
+                         [[-0.5,    0, 0],
+                          [0,       0, 0],
+                          [0.00001, 0, 0],
+                          [0.0001,  0, 0],
+                          [0.0005,  0, 1],
+                          [0.001,   1, 1],
+                          [0.005,   1, 2],
+                          [0.006,   2, 2],
+                          [0.009,   2, 3],
+                          [0.01,    3, 3],
+                          [0.015,   3, 4],
+                          [0.02,    4, 4],
+                          [0.03,    4, 4],
+                          [1.4,     4, 4]])
+def test_z_idxs_agb(z, true_idx_0, true_idx_1):
+    z_idx = tab.find_z_bound_idxs_agb_py(z)
+    assert z_idx[0] == true_idx_0
+    assert z_idx[1] == true_idx_1
 
+@pytest.mark.parametrize("func", [tab.find_z_bound_idxs_winds_py,
+                                  tab.find_z_bound_idxs_sn_ii_py])
+@pytest.mark.parametrize("z, true_idx_0, true_idx_1",
+                         [[-0.5,   0, 0],
+                          [0,      0, 0],
+                          [0.0005, 0, 1],
+                          [0.001,  1, 1],
+                          [0.003,  1, 2],
+                          [0.004,  2, 2],
+                          [0.01,   2, 3],
+                          [0.02,   3, 3],
+                          [0.03,   3, 3],
+                          [1.4,    3, 3]])
+def test_z_idxs_winds_sn(func, z, true_idx_0, true_idx_1):
+    z_idx = func(z)
+    assert z_idx[0] == true_idx_0
+    assert z_idx[1] == true_idx_1
+
+# ------------------------------------------------------------------------------
+#
+# Age index checking
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("age, true_idx_0, true_idx_1",
+                         [[-0.5,  0, 0],
+                          [0,     0, 0],
+                          [1,     0, 1],
+                          [3E7,   1, 1],
+                          [3.2E7, 11, 12],
+                          [1E20,  1000, 1000]])
+def test_age_idx_known_agb(age, true_idx_0, true_idx_1):
+    age_idxs = tab.find_age_bound_idxs_agb_py(age)
+    assert age_idxs[0] == true_idx_0
+    assert age_idxs[1] == true_idx_1
+
+@pytest.mark.parametrize("age, true_idx_0, true_idx_1",
+                         [[-0.5,  0, 0],
+                          [0,     0, 0],
+                          [1,     0, 1],
+                          [1E6,   1, 1],
+                          [1.2E6, 47, 48],
+                          [1E20,  1000, 1000]])
+def test_age_idx_known_sn_ii(age, true_idx_0, true_idx_1):
+    age_idxs = tab.find_age_bound_idxs_sn_ii_py(age)
+    assert age_idxs[0] == true_idx_0
+    assert age_idxs[1] == true_idx_1
+
+@pytest.mark.parametrize("age, true_idx_0, true_idx_1",
+                         [[-0.5,  0, 0],
+                          [0,     0, 0],
+                          [1,     0, 1],
+                          [1E6,   1, 1],
+                          [1.2E6, 47, 48],
+                          [1E20,  1000, 1000]])
+def test_age_idx_known_sn_ii(age, true_idx_0, true_idx_1):
+    age_idxs = tab.find_age_bound_idxs_winds_py(age)
+    assert age_idxs[0] == true_idx_0
+    assert age_idxs[1] == true_idx_1
+
+@pytest.mark.parametrize("idx_func, age_func",
+                         [[tab.find_age_bound_idxs_agb_py, tab.get_ages_agb],
+                          [tab.find_age_bound_idxs_sn_ii_py, tab.get_ages_sn_ii],
+                          [tab.find_age_bound_idxs_winds_py, tab.get_ages_winds]])
+def test_age_idx_bounds(idx_func, age_func):
+    """Test that the boundaries returned actually span the input value"""
+    for age in np.random.uniform(0, 50E6, 100):
+        age_idxs = idx_func(age)
+        age_0 = age_func(age_idxs[0])
+        age_1 = age_func(age_idxs[1])
+        assert age_0 <= age <= age_1
+
+
+# ------------------------------------------------------------------------------
+#
+# Rate checking
+#
+# ------------------------------------------------------------------------------
 # define some exact values to check
-exact_values = {z:dict() for z in z_values}
-arb_age_1 = 6.55276e+07
-arb_age_2 = 4.43123e+09
+exact_rates = {"AGB":   {z:dict() for z in z_values_agb},
+               "SN":    {z:dict() for z in z_values_sn_ii},
+               "winds": {z:dict() for z in z_values_sn_ii}}
 
-exact_values[0.0001][arb_age_1] = [5.09667e-14, 4.09653e-13, 3.88593e-14,
-                                   1.21708e-15, 5.17646e-13]
-exact_values[0.0001][arb_age_2] = [1.49565e-13, 1.33345e-15, 3.1521e-14,
-                                   1.10837e-17, 1.82734e-13]
-exact_values[0.0001][14E9] = [3.76005e-14, 3.35229e-16, 7.92434e-15,
-                              2.78644e-18, 4.59393e-14]
-exact_values[0.02][arb_age_1] = [3.17607e-13, 6.20672e-12, 5.55177e-12,
-                                 1.11052e-12, 1.6666e-11]
-exact_values[0.02][arb_age_2] = [3.68107e-14, 1.80335e-14, 7.75804e-14,
-                                 1.11294e-14, 1.786e-13]
-exact_values[0.02][14E9] = [6.14806e-15, 3.05135e-15, 1.92865e-14,
-                            2.87525e-15, 4.01243e-14]
+a1_agb = 4.87126e+07
+a2_agb = 5.18284e+09
+a3_agb = 1.49071e+10
+
+a1_big = 5.35622e+06
+a2_big = 2.0096e+07
+a3_big = 4.98048e+07
+
+exact_rates["AGB"][0.0001][a1_agb] = [7.09491e-14, 5.70265e-13, 5.40948e-14,
+                                      1.69425e-15, 7.20598e-13, 1.17777e-09]
+exact_rates["AGB"][0.0001][a2_agb] = [1.24998e-13, 1.11443e-15, 2.63436e-14,
+                                      9.26319e-18, 1.5272e-13, 6.75174e-12]
+exact_rates["AGB"][0.0001][a3_agb] = [4.47986e-14, 3.99405e-16, 9.44136e-15,
+                                      3.31987e-18, 5.47338e-14, 2.41978e-12]
+exact_rates["AGB"][0.02][a1_agb] = [4.72927e-13, 9.11745e-12, 8.09554e-12,
+                                    1.63765e-12, 2.44598e-11, 1.13993e-09]
+exact_rates["AGB"][0.02][a2_agb] = [2.03753e-14, 1.01125e-14, 6.39174e-14,
+                                    9.52884e-15, 1.32976e-13, 6.62671e-12]
+exact_rates["AGB"][0.02][a3_agb] = [3.50733e-15, 1.69245e-15, 1.02298e-14,
+                                    1.5237e-15, 2.16085e-14, 2.11891e-12]
+
+exact_rates["SN"][0][a1_big] = [1.99892e-10, 1.33543e-14, 2.66822e-09,
+                                7.28807e-11, 3.73349e-09]
+exact_rates["SN"][0][a2_big] = [2.08527e-11, 5.15003e-13, 1.26636e-10,
+                                2.01846e-11, 2.30974e-10]
+exact_rates["SN"][0][a3_big] = [0, 0, 0, 0, 0]
+exact_rates["SN"][0.02][a1_big] = [1.12158e-10, 5.28933e-11, 1.54796e-09,
+                                   5.64708e-11, 2.53758e-09]
+exact_rates["SN"][0.02][a2_big] = [2.85431e-11, 1.26967e-11, 5.87693e-11,
+                                   2.31149e-11, 1.77962e-10]
+exact_rates["SN"][0.02][a3_big] = [0, 0, 0, 0, 0]
+
+exact_rates["winds"][0][a1_big] = [0]
+exact_rates["winds"][0][a2_big] = [0]
+exact_rates["winds"][0][a3_big] = [0]
+exact_rates["winds"][0.02][a1_big] = [1.32022e-09]
+exact_rates["winds"][0.02][a2_big] = [3.29819e-11]
+exact_rates["winds"][0.02][a3_big] = [0]
 
 # then store the ages and metallicities we used
-exact_value_ages = [arb_age_1, arb_age_2, 14E9]
-exact_value_zs = [0.0001, 0.02]
+exact_value_ages_agb = [a1_agb, a2_agb, a3_agb]
+exact_value_ages_big = [a1_big, a2_big, a3_big]
+exact_value_zs_agb = [0.0001, 0.02]
+exact_value_zs_big = [0, 0.02]
+
+# then some values to be used for error testing
+testing_ages_agb = [0, 30E6, 100E6, 1E9, 13.9E9, 14E9]
+testing_zs = z_values_agb + [0, 0.00001, 0.0005, 0.005, 0.009, 0.015, 0.03,
+                             -0.005, 0.5, 1.5]
 # ------------------------------------------------------------------------------
 #
 # Error checking and edge cases
 #
 # ------------------------------------------------------------------------------
-# For these first ones, we are checking how it responds to one bad parameter
-# value. We assume a correct value for the other parameter, unless the value
-# of this other parameter doesn't matter at all. Combinations
-# of bad parameter values will be checked later.
+# For these first ones, we are checking how it responds to bad parameter values
+# Some of these will be independent bad paramter checks, but others will
+# involve combinations of bad parameters. One parameter should govern in these
+# combinations so that results re predictable.
+# ------------------------------------------------------------------------------
+#
+# Negative Age
+#
+# ------------------------------------------------------------------------------
 @pytest.mark.parametrize("age", [-1, -1E6, -1E12])
-@pytest.mark.parametrize("z", testing_zs + [-0.005, 0.5])
-def test_negative_age(age, z):
-    rates = agb.get_ejecta_rate(age, z)
+@pytest.mark.parametrize("z", testing_zs)
+@pytest.mark.parametrize("func, n_fields",
+                         [[tab.get_ejecta_rate_agb_py, n_fields_agb],
+                          [tab.get_ejecta_rate_winds_py, n_fields_winds],
+                          [tab.get_ejecta_rate_sn_ii_py, n_fields_sn_ii]])
+def test_negative_age_rate(func, n_fields, age, z):
+    rates = func(age, z)
     for idx in range(n_fields):
         assert rates[idx] == 0
 
-@pytest.mark.parametrize("age", [0, 1E5, 30E6])
-@pytest.mark.parametrize("z", testing_zs + [-0.005, 0.5])
-def test_early_age(age, z):
-    """Rates should be zero at early times before AGB are active."""
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
-        assert rates[idx] == 0
+# ------------------------------------------------------------------------------
+#
+# Early age
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("func, min_age",
+                         [[tab.get_ejecta_rate_agb_py, 30E6],
+                          [tab.get_ejecta_rate_sn_ii_py, 3E6]])
+@pytest.mark.parametrize("z", testing_zs)
+def test_early_age(func, min_age, z):
+    """Rates should be zero at early times before AGB are active.
+    This checks all metallicities"""
+    for age in np.random.uniform(0, min_age, 100):
+        rates = func(age, z)
+        for idx in range(n_fields_agb):
+            assert rates[idx] == 0
 
+# ------------------------------------------------------------------------------
+#
+# Late Times
+#
+# ------------------------------------------------------------------------------
 # If the above tests pass, we are confident that the early time yields
 # are working properly at all metallicities. Now we can test at late times.
 # We'll first check at the known metallicity values
 @pytest.mark.parametrize("age", [14E9, 14.0001E9, 20E9])
 @pytest.mark.parametrize("z,answer",
-                         [(0.0001, exact_values[0.0001][14E9]),
-                          (0.02,   exact_values[0.02][14E9])])
-def test_very_late_age(age, z, answer):
+                         [(0.0001, exact_rates["AGB"][0.0001][a3_agb]),
+                          (0.02, exact_rates["AGB"][0.02][a3_agb])])
+def test_very_late_age_agb(age, z, answer):
     """Rates should be equal to the last timestep"""
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    rates = tab.get_ejecta_rate_agb_py(age, z)
+    for idx in range(n_fields_agb):
         assert rates[idx] == answer[idx]
 
-@pytest.mark.parametrize("z", [0, 1E-8, 1E-4, 9.99E-5])
+@pytest.mark.parametrize("age", [50E6, 51E6, 20E9])
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_very_late_age_sn_ii(age, z):
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == 0
+
+@pytest.mark.parametrize("age", [50E6, 51E6, 20E9])
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_very_late_age_winds(age, z):
+    rates = tab.get_ejecta_rate_winds_py(age, z)
+    for idx in range(n_fields_winds):
+        assert rates[idx] == 0
+
+
+# ------------------------------------------------------------------------------
+#
+# Low Metallicities
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("z", [-0.5, 0, 1E-8, 1E-4, 9.99E-5])
 @pytest.mark.parametrize("age,answer",
-                         [(arb_age_1, exact_values[0.0001][arb_age_1]),
-                          (arb_age_2, exact_values[0.0001][arb_age_2])])
-def test_low_metallicity(age, z, answer):
+                         [(a1_agb, exact_rates["AGB"][0.0001][a1_agb]),
+                          (a2_agb, exact_rates["AGB"][0.0001][a2_agb])])
+def test_low_metallicity_agb(age, z, answer):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    rates = tab.get_ejecta_rate_agb_py(age, z)
+    for idx in range(n_fields_agb):
         assert rates[idx] == answer[idx]
+
+@pytest.mark.parametrize("z", [-0.5, -0.1, -1E-5, 0])
+@pytest.mark.parametrize("age,answer",
+                         [(a1_big, exact_rates["SN"][0][a1_big]),
+                          (a2_big, exact_rates["SN"][0][a2_big])])
+def test_low_metallicity_sn(age, z, answer):
+    """Metallicity less than the minimum should use the yields for minimum z"""
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == answer[idx]
+
+@pytest.mark.parametrize("z", [-0.5, -0.1, -1E-5, 0])
+@pytest.mark.parametrize("age,answer",
+                         [(a1_big, exact_rates["winds"][0][a1_big]),
+                          (a2_big, exact_rates["winds"][0][a2_big])])
+def test_low_metallicity_winds(age, z, answer):
+    """Metallicity less than the minimum should use the yields for minimum z"""
+    rates = tab.get_ejecta_rate_winds_py(age, z)
+    for idx in range(n_fields_winds):
+        assert rates[idx] == answer[idx]
+
+# ------------------------------------------------------------------------------
+#
+# High Metallicities
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("z", [0.02, 0.05, 0.5])
+@pytest.mark.parametrize("age,answer",
+                         [(a1_agb, exact_rates["AGB"][0.02][a1_agb]),
+                          (a2_agb, exact_rates["AGB"][0.02][a2_agb])])
+def test_high_metallicity_agb(age, z, answer):
+    """Metallicity more than the maximum should use the yields for maximum z"""
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_agb):
+        assert rates[idx] == answer[idx]
+
 
 @pytest.mark.parametrize("z", [0.02, 0.05, 0.5])
 @pytest.mark.parametrize("age,answer",
-                         [(arb_age_1, exact_values[0.02][arb_age_1]),
-                          (arb_age_2, exact_values[0.02][arb_age_2])])
-def test_high_metallicity(age, z, answer):
+                         [(a1_big, exact_rates["SN"][0.02][a1_big]),
+                          (a2_big, exact_rates["SN"][0.02][a2_big])])
+def test_high_metallicity_sn(age, z, answer):
     """Metallicity more than the maximum should use the yields for maximum z"""
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_sn_ii):
         assert rates[idx] == answer[idx]
 
+
+@pytest.mark.parametrize("z", [0.02, 0.05, 0.5])
+@pytest.mark.parametrize("age,answer",
+                         [(a1_big, exact_rates["winds"][0.02][a1_big]),
+                          (a2_big, exact_rates["winds"][0.02][a2_big])])
+def test_high_metallicity_winds(age, z, answer):
+    """Metallicity more than the maximum should use the yields for maximum z"""
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_winds):
+        assert rates[idx] == answer[idx]
+
+
+# ------------------------------------------------------------------------------
+#
+# Late times with low metallicities
+#
+# ------------------------------------------------------------------------------
 # Now we are confident that it works at late times with known metallicity values
 # and at arbitrary times with high and low metallicity. Now we need to test
 # the cases when both of these might be true.
 @pytest.mark.parametrize("age", [14E9, 14.0001E9, 20E9])
 @pytest.mark.parametrize("z", [0, 0.00001, 0.0001])
-def test_low_z_late_time(age, z):
+def test_low_z_late_time_agb(age, z):
     """No matter what, if we are past the last time and at low metallicity,
     we should have the same rate as the low z late time output."""
-    answer = exact_values[0.0001][14E9]
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    answer = exact_rates["AGB"][0.0001][a3_agb]
+    rates = tab.get_ejecta_rate_agb_py(age, z)
+    for idx in range(n_fields_agb):
         assert rates[idx] == answer[idx]
 
+@pytest.mark.parametrize("age", [50E6, 50.0001E6, 20E9])
+@pytest.mark.parametrize("z", [0, -0.0001, -5])
+def test_low_z_late_time_sn(age, z):
+    """No matter what, if we are past the last time and at low metallicity,
+    we should have the same rate as the low z late time output."""
+    answer = exact_rates["SN"][0][a3_big]
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == answer[idx]
+
+@pytest.mark.parametrize("age", [50E6, 50.0001E6, 20E9])
+@pytest.mark.parametrize("z", [0, -0.0001, -5])
+def test_low_z_late_time_agb(age, z):
+    """No matter what, if we are past the last time and at low metallicity,
+    we should have the same rate as the low z late time output."""
+    answer = exact_rates["winds"][0][a3_big]
+    rates = tab.get_ejecta_rate_winds_py(age, z)
+    for idx in range(n_fields_winds):
+        assert rates[idx] == answer[idx]
+
+
+# ------------------------------------------------------------------------------
+#
+# Late times with high metallicities
+#
+# ------------------------------------------------------------------------------
 @pytest.mark.parametrize("age", [14E9, 14.0001E9, 20E9])
 @pytest.mark.parametrize("z", [0.02, 0.03, 0.5])
-def test_high_z_late_time(age, z):
+def test_high_z_late_time_agb(age, z):
     """No matter what, if we are past the last time and at low metallicity,
     we should have the same rate as the low z late time output."""
-    answer = exact_values[0.02][14E9]
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    answer = exact_rates["AGB"][0.02][a3_agb]
+    rates = tab.get_ejecta_rate_agb_py(age, z)
+    for idx in range(n_fields_agb):
+        assert rates[idx] == answer[idx]
+
+
+@pytest.mark.parametrize("age", [50E6, 50.0001E6, 20E9])
+@pytest.mark.parametrize("z", [0.02, 0.03, 0.5])
+def test_high_z_late_time_sn(age, z):
+    """No matter what, if we are past the last time and at low metallicity,
+    we should have the same rate as the low z late time output."""
+    answer = exact_rates["SN"][0.02][a3_big]
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == answer[idx]
+
+
+@pytest.mark.parametrize("age", [50E6, 50.0001E6, 20E9])
+@pytest.mark.parametrize("z", [0.02, 0.03, 0.5])
+def test_high_z_late_time_agb(age, z):
+    """No matter what, if we are past the last time and at low metallicity,
+    we should have the same rate as the low z late time output."""
+    answer = exact_rates["winds"][0.02][a3_big]
+    rates = tab.get_ejecta_rate_winds_py(age, z)
+    for idx in range(n_fields_winds):
         assert rates[idx] == answer[idx]
 
 # ------------------------------------------------------------------------------
 #
-# Checking normal cases
+# Checking cases in normal range
 #
 # ------------------------------------------------------------------------------
-@pytest.mark.parametrize("age", exact_value_ages)
-@pytest.mark.parametrize("z", exact_value_zs)
-def test_double_alignment(age, z):
+# We have exhausted the parameter space of when age or metallicity is outside
+# the range set by the models. We can then test the times when the metallicity
+# and age is inside the range of the models. We first check cases when the
+# age and metallicity exactly line up with one of the tabulated points
+@pytest.mark.parametrize("age", exact_value_ages_agb)
+@pytest.mark.parametrize("z", exact_value_zs_agb)
+def test_double_alignment_agb(age, z):
     """
     Check the yields when they line up exactly with one of the time and
     metallicity steps.
     """
-    answer = exact_values[z][age]
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    answer = exact_rates["AGB"][z][age]
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_agb):
         assert rates[idx] == answer[idx]
 
+@pytest.mark.parametrize("age", exact_value_ages_big)
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_double_alignment_sn(age, z):
+    """
+    Check the yields when they line up exactly with one of the time and
+    metallicity steps.
+    """
+    answer = exact_rates["SN"][z][age]
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == answer[idx]
+
+@pytest.mark.parametrize("age", exact_value_ages_big)
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_double_alignment_sinds(age, z):
+    """
+    Check the yields when they line up exactly with one of the time and
+    metallicity steps.
+    """
+    answer = exact_rates["winds"][z][age]
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_winds):
+        assert rates[idx] == answer[idx]
+
+# ------------------------------------------------------------------------------
+#
+# Checking cases where age aligns but not metallicity
+#
+# ------------------------------------------------------------------------------
 @pytest.mark.parametrize("z,answer",
                          [(0.00055, [3.09117e-13, 1.597165e-12, 7.01507e-13,
                                      9.038095e-15, 2.715225e-12]),
@@ -149,10 +463,15 @@ def test_age_alignment(z,answer):
     These are calculated by hand.
     """
     age = 4.87735e+07
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_agb):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
+# ------------------------------------------------------------------------------
+#
+# Checking cases where metallicity aligns but not age
+#
+# ------------------------------------------------------------------------------
 @pytest.mark.parametrize("age,answer",
                          [(1E8, [1.11721345e-13, 9.4988731e-13, 1.82078847e-12,
                                  4.4600222442673606e-14, 3.26713668076109e-12]),
@@ -164,10 +483,15 @@ def test_z_alignment(age, answer):
     These are calculated by hand.
     """
     z = 0.006
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_agb):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
+# ------------------------------------------------------------------------------
+#
+# Checking cases where neither age or metallicity aligns
+#
+# ------------------------------------------------------------------------------
 @pytest.mark.parametrize("age,z,answer",
                          [(1.18941e10, 0.00055, [2.46099725e-14, 2.53411425e-16,
                                                  6.2606475e-15, 1.669699250e-17,
@@ -181,6 +505,6 @@ def test_nonalignment(age, z, answer):
     """Test when neither age or metallicity are aligned, as will typically
     be the case. I only do a few tests here since it's a lot of work to
     calculate by hand."""
-    rates = agb.get_ejecta_rate(age, z)
-    for idx in range(n_fields):
+    rates = tab.get_ejecta_rate(age, z)
+    for idx in range(n_fields_agb):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)

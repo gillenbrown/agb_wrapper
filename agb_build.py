@@ -2,14 +2,26 @@ from cffi import FFI
 ffibuilder = FFI()
 
 # any functions that you want to import in Python must be here. 
-ffibuilder.cdef("void init_agb(void);"
-                "double *get_ejecta_rate(double, double);"
-                "int *find_z_bound_idxs(double);"
-                "int *find_age_bound_idxs(double);"
-                "double read_in_check(void);"
-                "double get_ages(int);"
-                "int guess_age_idx(double);"
-                "double *get_ejecta_timestep(double, double, double, double);")
+ffibuilder.cdef("int *find_z_bound_idxs_agb_py(double);"
+                "int *find_z_bound_idxs_winds_py(double);"
+                "int *find_z_bound_idxs_sn_ii_py(double);"
+                "int guess_age_idx_agb_py(double);"
+                "int guess_age_idx_winds_py(double);"
+                "int guess_age_idx_sn_ii_py(double);"
+                "int *find_age_bound_idxs_agb_py(double);"
+                "int *find_age_bound_idxs_winds_py(double);"
+                "int *find_age_bound_idxs_sn_ii_py(double);"
+                "double *get_ejecta_rate_agb_py(double, double);"
+                "double *get_ejecta_rate_winds_py(double, double);"
+                "double *get_ejecta_rate_sn_ii_py(double, double);"
+                "void init_detailed_enrichment(void);"
+                "double get_ages_agb(int);"
+                "double get_ages_sn_ii(int);"
+                "double get_ages_winds(int);"
+                "double *get_ejecta_timestep_agb(double, double, double, double);"
+                "double *get_ejecta_timestep_winds(double, double, double, double);"
+                "double *get_ejecta_timestep_snii(double, double, double, double);"
+)
 # in the .c file, order does matter for this compilation. In the full context of
 # ART it doesn't matter, since the .h file will be imported by the SF recipe.
 # But here, I'm only compiling this snippet, and so the order does matter. I 
@@ -19,7 +31,8 @@ ffibuilder.cdef("void init_agb(void);"
 
 ffibuilder.set_source("art_enrich",  # name of the output C extension
                       '#include "feedback.detailed_enrich.h"',
-                      define_macros=[("TEST_FLAG", None)],    
+                      define_macros=[("PY_TESTING", None),
+                                     ("ENRICHMENT_ELEMENTS", None)],
                       sources=['feedback.detailed_enrich.c'])   
 
 ffibuilder.compile(verbose=True)
