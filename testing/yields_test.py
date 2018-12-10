@@ -15,8 +15,11 @@ a_tol = 0
 n_fields_agb = 6
 n_fields_sn_ii = 5
 n_fields_winds = 1
+n_fields_sn_ia = 5
+
 z_values_agb = [0.0001, 0.001, 0.006, 0.01, 0.02]
 z_values_sn_ii = [0, 0.001, 0.004, 0.02]
+z_values_sn_ia = [0.002, 0.02]
 
 # ------------------------------------------------------------------------------
 #
@@ -448,23 +451,43 @@ def test_double_alignment_sinds(age, z):
 # Checking cases where age aligns but not metallicity
 #
 # ------------------------------------------------------------------------------
-@pytest.mark.parametrize("z,answer",
-                         [(0.00055, [3.09117e-13, 1.597165e-12, 7.01507e-13,
-                                     9.038095e-15, 2.715225e-12]),
-                          (0.005, [2.394706e-13, 2.896638e-12, 2.505184e-12,
-                                   7.985132e-14, 6.4357940e-12]),
-                          (0.007, [2.762215e-13, 3.8769875e-12, 3.0566825e-12,
-                                   2.67147225e-13, 8.811905e-12]),
-                          (0.015, [4.177815e-13, 7.12888e-12, 5.439345e-12,
-                                   1.1479675e-12, 1.78976e-11])])
-def test_age_alignment(z,answer):
+def test_age_alignment_agb():
     """
     Test when the age matches one of the ages, but the metallicity does not.
     These are calculated by hand.
     """
-    age = 4.87735e+07
-    rates = tab.get_ejecta_rate(age, z)
+    age = 7.72281e+07
+    z = 0.014
+    rates = tab.get_ejecta_rate_agb_py(age, z)
+    answer = [3.916888e-13, 4.822066e-12, 3.767752e-12, 7.080042e-13,
+              1.1942716e-11, 7.068224e-10]
     for idx in range(n_fields_agb):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+def test_age_alignment_sn_ii():
+    """
+    Test when the age matches one of the ages, but the metallicity does not.
+    These are calculated by hand.
+    """
+    age = 1.18802e+07
+    z = 0.003
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    answer = [5.549346666666668e-11, 3.0864996666666666e-11,
+              1.8916766666666664e-10, 3.163816666666667e-11,
+              4.862963333333333e-10]
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+def test_age_alignment_winds():
+    """
+    Test when the age matches one of the ages, but the metallicity does not.
+    These are calculated by hand.
+    """
+    age = 3.18708e+07
+    z = 0.01
+    rates = tab.get_ejecta_rate_winds_py(age, z)
+    answer = [6.99026e-12]
+    for idx in range(n_fields_winds):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
 # ------------------------------------------------------------------------------
@@ -472,19 +495,44 @@ def test_age_alignment(z,answer):
 # Checking cases where metallicity aligns but not age
 #
 # ------------------------------------------------------------------------------
-@pytest.mark.parametrize("age,answer",
-                         [(1E8, [1.11721345e-13, 9.4988731e-13, 1.82078847e-12,
-                                 4.4600222442673606e-14, 3.26713668076109e-12]),
-                          (1.38116e9, [2.30691e-13, 1.216195e-14, 2.287855e-13,
-                                       2.666265e-15, 5.0098e-13])])
-def test_z_alignment(age, answer):
+def test_z_alignment_agb():
     """
     Test when the age matches one of the metallicities, but the age does not.
     These are calculated by hand.
     """
+    age = 6.6e9
     z = 0.006
-    rates = tab.get_ejecta_rate(age, z)
+    answer = [3.2062130240466363e-15, 1.0474256813213504e-15,
+              2.2510376609181443e-14, 4.3740128224435275e-16,
+              3.0494667257711925e-14, 5.065734534855477e-12]
+    rates = tab.get_ejecta_rate_agb_py(age, z)
     for idx in range(n_fields_agb):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+def test_z_alignment_sn_ii():
+    """
+    Test when the age matches one of the metallicities, but the age does not.
+    These are calculated by hand.
+    """
+    age = 1.14e7
+    z = 0
+    answer = [7.844304362416108e-11, 8.483107852348994e-13,
+              3.5254087248322143e-10, 3.3009920134228184e-11,
+              7.016760805369128e-10]
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+def test_z_alignment_winds():
+    """
+    Test when the age matches one of the metallicities, but the age does not.
+    These are calculated by hand.
+    """
+    age = 1e7
+    z = 0.004
+    answer = [1.8475617002294164e-10]
+    rates = tab.get_ejecta_rate_winds_py(age, z)
+    for idx in range(n_fields_winds):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
 # ------------------------------------------------------------------------------
@@ -492,19 +540,98 @@ def test_z_alignment(age, answer):
 # Checking cases where neither age or metallicity aligns
 #
 # ------------------------------------------------------------------------------
-@pytest.mark.parametrize("age,z,answer",
-                         [(1.18941e10, 0.00055, [2.46099725e-14, 2.53411425e-16,
-                                                 6.2606475e-15, 1.669699250e-17,
-                                                 3.13173275e-14]),
-                          (1E9, 0.017, [5.934036074380165e-13,
-                                        9.672938628099173e-14,
-                                        5.528954140495868e-13,
-                                        5.3083009256198344e-14,
-                                        1.4929106446280992e-12])])
-def test_nonalignment(age, z, answer):
+def test_nonalignment_agb():
     """Test when neither age or metallicity are aligned, as will typically
     be the case. I only do a few tests here since it's a lot of work to
     calculate by hand."""
-    rates = tab.get_ejecta_rate(age, z)
+    age = 6e9
+    z = 0.009
+    answer = [8.02793380332707e-15, 3.732804502951435e-15,
+              2.7129383532331632e-14, 3.217899362624093e-15,
+              5.249171289911456e-14, 5.7331290535283075e-12]
+    rates = tab.get_ejecta_rate_agb_py(age, z)
     for idx in range(n_fields_agb):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+def test_nonalignment_sn_ii():
+    """Test when neither age or metallicity are aligned, as will typically
+    be the case. I only do a few tests here since it's a lot of work to
+    calculate by hand."""
+    age = 1e7
+    z = 0.0001
+    answer = [8.813877138159571e-11, 1.4183695405556967e-12,
+              4.5754250734132045e-10, 3.812865423910273e-11,
+              8.755298605404028e-10]
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+def test_nonalignment_winds():
+    """Test when neither age or metallicity are aligned, as will typically
+    be the case. I only do a few tests here since it's a lot of work to
+    calculate by hand."""
+    age = 2e7
+    z = 0.002
+    answer = [1.3433394997876858e-11]
+    rates = tab.get_ejecta_rate_winds_py(age, z)
+    for idx in range(n_fields_winds):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+# ------------------------------------------------------------------------------
+#
+# SN Ia yields
+#
+# ------------------------------------------------------------------------------
+# first get the exact yields
+exact_yields_snia_01_solar = [0.0667, 1.3983e-08, 0.0995, 0.882064, 1.38398]
+exact_yields_snia_solar = [0.0475001, 1.10546e-05, 0.0500047, 0.899624, 1.37164]
+
+# the yields only depend on metallicity, so we only have to test a few ranges
+@pytest.mark.parametrize("z", [-0.5, 0, 1E-4, 0.0019999])
+def test_low_metallicity_sn_ia(z):
+    """Metallicity less than the minimum should use the yields for minimum z"""
+    rates = tab.get_yields_sn_ia_py(z)
+    for idx in range(n_fields_sn_ia):
+        assert rates[idx] == exact_yields_snia_01_solar[idx]
+
+@pytest.mark.parametrize("z", [0.020001, 0.05, 0.5, 1.5])
+def test_low_metallicity_sn_ia(z):
+    """Metallicity less than the minimum should use the yields for minimum z"""
+    rates = tab.get_yields_sn_ia_py(z)
+    for idx in range(n_fields_sn_ia):
+        assert rates[idx] == exact_yields_snia_solar[idx]
+
+# ------------------------------------------------------------------------------
+#
+# Test exact values for SN Ia
+#
+# ------------------------------------------------------------------------------
+def test_exact_low_metallicity_sn_ia():
+    """Metallicity less than the minimum should use the yields for minimum z"""
+    rates = tab.get_yields_sn_ia_py(0.002)
+    for idx in range(n_fields_sn_ia):
+        assert rates[idx] == exact_yields_snia_01_solar[idx]
+
+def test_exact_high_metallicity_sn_ia():
+    """Metallicity less than the minimum should use the yields for minimum z"""
+    rates = tab.get_yields_sn_ia_py(0.02)
+    for idx in range(n_fields_sn_ia):
+        assert rates[idx] == exact_yields_snia_solar[idx]
+
+# ------------------------------------------------------------------------------
+#
+# Test the range at which we interpolate
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("z, answers",
+                         [(0.006, [0.06243335555555555, 2.467453444444444e-06,
+                                  0.08850104444444444, 0.8859662222222222,
+                                  1.3812377777777776]),
+                          (0.01, [0.0581667111111111, 4.920923888888888e-06,
+                                  0.07750208888888888, 0.8898684444444444,
+                                  1.3784955555555554])])
+def test_interpolate_sn_ia(z, answers):
+    """Metallicity less than the minimum should use the yields for minimum z"""
+    rates = tab.get_yields_sn_ia_py(z)
+    for idx in range(n_fields_sn_ia):
+        assert rates[idx] == answers[idx]
