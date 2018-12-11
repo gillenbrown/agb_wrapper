@@ -612,6 +612,102 @@ def test_nonalignment_winds():
 
 # ------------------------------------------------------------------------------
 #
+# Test the timestep calculation
+#
+# ------------------------------------------------------------------------------
+# Here we just take the rates and multiply by the given timestep and given mass
+# I'll reuse the old rates for the above tests.
+@pytest.mark.parametrize("age", exact_value_ages_agb)
+@pytest.mark.parametrize("z", exact_value_zs_agb)
+def test_double_alignment_timestep_agb(age, z):
+    """
+    Check the yields when they line up exactly with one of the time and
+    metallicity steps.
+    """
+    m = 10**np.random.uniform(2, 7)
+    dt = 10**np.random.uniform(2, 4)
+    answer = [m * dt * rate for rate in exact_rates["AGB"][z][age]]
+    rates = tab.get_ejecta_timestep_agb_py(age, z, m, dt)
+    for idx in range(n_fields_agb):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+@pytest.mark.parametrize("age", exact_value_ages_big)
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_double_alignment_timestep_sn(age, z):
+    """
+    Check the yields when they line up exactly with one of the time and
+    metallicity steps.
+    """
+    m = 10 ** np.random.uniform(2, 7)
+    dt = 10 ** np.random.uniform(2, 4)
+    answer = [m * dt * rate for rate in exact_rates["SN"][z][age]]
+    rates = tab.get_ejecta_timestep_snii_py(age, z, m, dt)
+    for idx in range(n_fields_sn_ii):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+@pytest.mark.parametrize("age", exact_value_ages_big)
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_double_alignment_timestep_winds(age, z):
+    """
+    Check the yields when they line up exactly with one of the time and
+    metallicity steps.
+    """
+    m = 10 ** np.random.uniform(2, 7)
+    dt = 10 ** np.random.uniform(2, 4)
+    answer = [m * dt * rate for rate in exact_rates["winds"][z][age]]
+    rates = tab.get_ejecta_timestep_winds_py(age, z, m, dt)
+    for idx in range(n_fields_winds):
+        assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
+
+def test_nonalignment_timestep_agb():
+    """Test when neither age or metallicity are aligned, as will typically
+    be the case. I only do a few tests here since it's a lot of work to
+    calculate by hand."""
+    age = 6e9
+    z = 0.009
+
+    m = 10 ** np.random.uniform(2, 7)
+    dt = 10 ** np.random.uniform(2, 4)
+    rates = [8.02793380332707e-15, 3.732804502951435e-15,
+             2.7129383532331632e-14, 3.217899362624093e-15,
+             5.249171289911456e-14, 5.7331290535283075e-12]
+    answers = [r * m * dt for r in rates]
+    ejecta = tab.get_ejecta_timestep_agb_py(age, z, m, dt)
+    for idx in range(n_fields_agb):
+        assert ejecta[idx] == pytest.approx(answers[idx], rel=r_tol, abs=a_tol)
+
+def test_nonalignment_timestep_sn_ii():
+    """Test when neither age or metallicity are aligned, as will typically
+    be the case. I only do a few tests here since it's a lot of work to
+    calculate by hand."""
+    age = 1e7
+    z = 0.0001
+    m = 10 ** np.random.uniform(2, 7)
+    dt = 10 ** np.random.uniform(2, 4)
+    rates = [8.813877138159571e-11, 1.4183695405556967e-12,
+             4.5754250734132045e-10, 3.812865423910273e-11,
+             8.755298605404028e-10]
+    answers = [r * m * dt for r in rates]
+    ejecta = tab.get_ejecta_timestep_snii_py(age, z, m, dt)
+    for idx in range(n_fields_sn_ii):
+        assert ejecta[idx] == pytest.approx(answers[idx], rel=r_tol, abs=a_tol)
+
+def test_nonalignment_timestep_winds():
+    """Test when neither age or metallicity are aligned, as will typically
+    be the case. I only do a few tests here since it's a lot of work to
+    calculate by hand."""
+    age = 2e7
+    z = 0.002
+    m = 10 ** np.random.uniform(2, 7)
+    dt = 10 ** np.random.uniform(2, 4)
+    rates = [1.3433394997876858e-11]
+    answers = [r * m * dt for r in rates]
+
+    ejecta = tab.get_ejecta_timestep_winds_py(age, z, m, dt)
+    for idx in range(n_fields_winds):
+        assert ejecta[idx] == pytest.approx(answers[idx], rel=r_tol, abs=a_tol)
+# ------------------------------------------------------------------------------
+#
 # SN Ia yields
 #
 # ------------------------------------------------------------------------------
