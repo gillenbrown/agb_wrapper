@@ -19,7 +19,23 @@ n_fields_sn_ia = 5
 
 z_values_agb = [0.0001, 0.001, 0.006, 0.01, 0.02]
 z_values_sn_ii = [0, 0.001, 0.004, 0.02]
+z_values_winds = [0, 0.001, 0.004, 0.02]
 z_values_sn_ia = [0.002, 0.02]
+
+# ------------------------------------------------------------------------------
+#
+# metallicity checking
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("z_vals_truth, func",
+                         [(z_values_agb, tab.get_z_agb),
+                          (z_values_sn_ii, tab.get_z_sn_ii),
+                          (z_values_winds, tab.get_z_winds)])
+def test_metallicities(z_vals_truth, func):
+    for idx in range(len(z_vals_truth)):
+        truth = z_vals_truth[idx]
+        test = func(idx)
+        assert truth == test
 
 # ------------------------------------------------------------------------------
 #

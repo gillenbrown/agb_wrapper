@@ -21,6 +21,9 @@ ffibuilder.cdef("int *find_z_bound_idxs_agb_py(double);"
                 "double *get_ejecta_timestep_agb(double, double, double, double);"
                 "double *get_ejecta_timestep_winds(double, double, double, double);"
                 "double *get_ejecta_timestep_snii(double, double, double, double);"
+                "double get_z_agb(int);"
+                "double get_z_sn_ii(int);"
+                "double get_z_winds(int);"
 )
 # in the .c file, order does matter for this compilation. In the full context of
 # ART it doesn't matter, since the .h file will be imported by the SF recipe.
