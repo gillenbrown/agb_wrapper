@@ -243,7 +243,7 @@ def test_early_age(func, min_age, z):
 # If the above tests pass, we are confident that the early time yields
 # are working properly at all metallicities. Now we can test at late times.
 # We'll first check at the known metallicity values
-@pytest.mark.parametrize("age", [14E9, 14.0001E9, 20E9])
+@pytest.mark.parametrize("age", [15E9, 15.0001E9, 20E9])
 @pytest.mark.parametrize("z,answer",
                          [(0.0001, exact_rates["AGB"][0.0001][a3_agb]),
                           (0.02, exact_rates["AGB"][0.02][a3_agb])])
@@ -314,7 +314,7 @@ def test_low_metallicity_winds(age, z, answer):
                           (a2_agb, exact_rates["AGB"][0.02][a2_agb])])
 def test_high_metallicity_agb(age, z, answer):
     """Metallicity more than the maximum should use the yields for maximum z"""
-    rates = tab.get_ejecta_rate(age, z)
+    rates = tab.get_ejecta_rate_agb_py(age, z)
     for idx in range(n_fields_agb):
         assert rates[idx] == answer[idx]
 
@@ -325,7 +325,7 @@ def test_high_metallicity_agb(age, z, answer):
                           (a2_big, exact_rates["SN"][0.02][a2_big])])
 def test_high_metallicity_sn(age, z, answer):
     """Metallicity more than the maximum should use the yields for maximum z"""
-    rates = tab.get_ejecta_rate(age, z)
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
     for idx in range(n_fields_sn_ii):
         assert rates[idx] == answer[idx]
 
@@ -336,7 +336,7 @@ def test_high_metallicity_sn(age, z, answer):
                           (a2_big, exact_rates["winds"][0.02][a2_big])])
 def test_high_metallicity_winds(age, z, answer):
     """Metallicity more than the maximum should use the yields for maximum z"""
-    rates = tab.get_ejecta_rate(age, z)
+    rates = tab.get_ejecta_rate_winds_py(age, z)
     for idx in range(n_fields_winds):
         assert rates[idx] == answer[idx]
 
@@ -434,7 +434,7 @@ def test_double_alignment_agb(age, z):
     metallicity steps.
     """
     answer = exact_rates["AGB"][z][age]
-    rates = tab.get_ejecta_rate(age, z)
+    rates = tab.get_ejecta_rate_agb_py(age, z)
     for idx in range(n_fields_agb):
         assert rates[idx] == answer[idx]
 
@@ -446,7 +446,7 @@ def test_double_alignment_sn(age, z):
     metallicity steps.
     """
     answer = exact_rates["SN"][z][age]
-    rates = tab.get_ejecta_rate(age, z)
+    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
     for idx in range(n_fields_sn_ii):
         assert rates[idx] == answer[idx]
 
@@ -458,7 +458,7 @@ def test_double_alignment_sinds(age, z):
     metallicity steps.
     """
     answer = exact_rates["winds"][z][age]
-    rates = tab.get_ejecta_rate(age, z)
+    rates = tab.get_ejecta_rate_winds_py(age, z)
     for idx in range(n_fields_winds):
         assert rates[idx] == answer[idx]
 
@@ -502,7 +502,7 @@ def test_age_alignment_winds():
     age = 3.18708e+07
     z = 0.01
     rates = tab.get_ejecta_rate_winds_py(age, z)
-    answer = [6.99026e-12]
+    answer = [6.354635e-12]
     for idx in range(n_fields_winds):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
