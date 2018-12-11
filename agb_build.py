@@ -9,6 +9,7 @@ void init_detailed_enrichment(void);
 int *find_z_bound_idxs_agb_py(double);
 int *find_z_bound_idxs_winds_py(double);
 int *find_z_bound_idxs_sn_ii_py(double);
+int *find_z_bound_idxs_sn_ia_py(double);
 int guess_age_idx_agb_py(double);
 int guess_age_idx_winds_py(double);
 int guess_age_idx_sn_ii_py(double);
@@ -21,12 +22,14 @@ double *get_ejecta_rate_sn_ii_py(double, double);
 double *get_ejecta_timestep_agb_py(double, double, double, double);
 double *get_ejecta_timestep_winds_py(double, double, double, double);
 double *get_ejecta_timestep_snii_py(double, double, double, double);
+double *get_yields_sn_ia_py(double);
 double get_ages_agb(int);
 double get_ages_sn_ii(int);
 double get_ages_winds(int);
 double get_z_winds(int);
 double get_z_agb(int);
-double get_z_sn_ii(int);"""
+double get_z_sn_ii(int);
+double get_z_sn_ia(int);"""
 )
 # in the .c file, order does matter for this compilation. In the full context of
 # ART it doesn't matter, since the .h file will be imported by the SF recipe.

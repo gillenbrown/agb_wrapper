@@ -30,7 +30,8 @@ z_values_sn_ia = [0.002, 0.02]
 @pytest.mark.parametrize("z_vals_truth, func",
                          [(z_values_agb, tab.get_z_agb),
                           (z_values_sn_ii, tab.get_z_sn_ii),
-                          (z_values_winds, tab.get_z_winds)])
+                          (z_values_winds, tab.get_z_winds),
+                          (z_values_sn_ia, tab.get_z_sn_ia)])
 def test_metallicities(z_vals_truth, func):
     for idx in range(len(z_vals_truth)):
         truth = z_vals_truth[idx]
@@ -75,8 +76,24 @@ def test_z_idxs_agb(z, true_idx_0, true_idx_1):
                           [0.02,   3, 3],
                           [0.03,   3, 3],
                           [1.4,    3, 3]])
-def test_z_idxs_winds_sn(func, z, true_idx_0, true_idx_1):
+def test_z_idxs_winds_sn_ii(func, z, true_idx_0, true_idx_1):
     z_idx = func(z)
+    assert z_idx[0] == true_idx_0
+    assert z_idx[1] == true_idx_1
+
+
+@pytest.mark.parametrize("z, true_idx_0, true_idx_1",
+                         [[-0.5,   0, 0],
+                          [0,      0, 0],
+                          [0.001,  0, 0],
+                          [0.002,  0, 0],
+                          [0.004,  0, 1],
+                          [0.01,   0, 1],
+                          [0.02,   1, 1],
+                          [0.03,   1, 1],
+                          [1.4,    1, 1]])
+def test_z_idxs_winds_sn_ia(z, true_idx_0, true_idx_1):
+    z_idx = tab.find_z_bound_idxs_sn_ia_py(z)
     assert z_idx[0] == true_idx_0
     assert z_idx[1] == true_idx_1
 
@@ -650,4 +667,4 @@ def test_interpolate_sn_ia(z, answers):
     """Metallicity less than the minimum should use the yields for minimum z"""
     rates = tab.get_yields_sn_ia_py(z)
     for idx in range(n_fields_sn_ia):
-        assert rates[idx] == answers[idx]
+        assert rates[idx] == pytest.approx(answers[idx], rel=r_tol, abs=a_tol)
