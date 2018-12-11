@@ -92,7 +92,7 @@ def test_z_idxs_winds_sn_ii(func, z, true_idx_0, true_idx_1):
                           [0.02,   1, 1],
                           [0.03,   1, 1],
                           [1.4,    1, 1]])
-def test_z_idxs_winds_sn_ia(z, true_idx_0, true_idx_1):
+def test_z_idxs_sn_ia(z, true_idx_0, true_idx_1):
     z_idx = tab.find_z_bound_idxs_sn_ia_py(z)
     assert z_idx[0] == true_idx_0
     assert z_idx[1] == true_idx_1
@@ -719,16 +719,16 @@ exact_yields_snia_solar = [0.0475001, 1.10546e-05, 0.0500047, 0.899624, 1.37164]
 @pytest.mark.parametrize("z", [-0.5, 0, 1E-4, 0.0019999])
 def test_low_metallicity_sn_ia(z):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    rates = tab.get_yields_sn_ia_py(z)
+    yields = tab.get_yields_sn_ia_py(z)
     for idx in range(n_fields_sn_ia):
-        assert rates[idx] == exact_yields_snia_01_solar[idx]
+        assert yields[idx] == exact_yields_snia_01_solar[idx]
 
 @pytest.mark.parametrize("z", [0.020001, 0.05, 0.5, 1.5])
 def test_low_metallicity_sn_ia(z):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    rates = tab.get_yields_sn_ia_py(z)
+    yields = tab.get_yields_sn_ia_py(z)
     for idx in range(n_fields_sn_ia):
-        assert rates[idx] == exact_yields_snia_solar[idx]
+        assert yields[idx] == exact_yields_snia_solar[idx]
 
 # ------------------------------------------------------------------------------
 #
@@ -737,15 +737,15 @@ def test_low_metallicity_sn_ia(z):
 # ------------------------------------------------------------------------------
 def test_exact_low_metallicity_sn_ia():
     """Metallicity less than the minimum should use the yields for minimum z"""
-    rates = tab.get_yields_sn_ia_py(0.002)
+    yields = tab.get_yields_sn_ia_py(0.002)
     for idx in range(n_fields_sn_ia):
-        assert rates[idx] == exact_yields_snia_01_solar[idx]
+        assert yields[idx] == exact_yields_snia_01_solar[idx]
 
 def test_exact_high_metallicity_sn_ia():
     """Metallicity less than the minimum should use the yields for minimum z"""
-    rates = tab.get_yields_sn_ia_py(0.02)
+    yields = tab.get_yields_sn_ia_py(0.02)
     for idx in range(n_fields_sn_ia):
-        assert rates[idx] == exact_yields_snia_solar[idx]
+        assert yields[idx] == exact_yields_snia_solar[idx]
 
 # ------------------------------------------------------------------------------
 #
@@ -761,6 +761,6 @@ def test_exact_high_metallicity_sn_ia():
                                   1.3784955555555554])])
 def test_interpolate_sn_ia(z, answers):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    rates = tab.get_yields_sn_ia_py(z)
+    yields = tab.get_yields_sn_ia_py(z)
     for idx in range(n_fields_sn_ia):
-        assert rates[idx] == pytest.approx(answers[idx], rel=r_tol, abs=a_tol)
+        assert yields[idx] == pytest.approx(answers[idx], rel=r_tol, abs=a_tol)
