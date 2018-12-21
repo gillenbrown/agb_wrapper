@@ -1,6 +1,7 @@
 import sys, os
 
 import pytest
+from pytest import approx
 import random
 
 import tabulation
@@ -31,15 +32,23 @@ def all_stars(func):
             func(star)
     return internal
 
+
+# ==============================================================================
+#
+# SN Ia
+#
+# ==============================================================================
 @all_stars
 def test_snia_age(star):
     test_age = star.snia["time"] - star.snia["birth"]
     assert star.snia["age"] == test_age
 
+
 @all_stars
 def test_snia_dt(star):
     test_dt = star.snia["next"] - star.snia["time"]
     assert star.snia["dt"] == test_dt
+
 
 @all_stars
 def test_snia_total_metallicity(star):
@@ -48,12 +57,34 @@ def test_snia_total_metallicity(star):
                    star.snia["metallicity AGB"]
     assert star.snia["metallicity"] == test_total_z
 
+
 @all_stars
 def test_snia_early_rate(star):
     if star.snia["age"] < 20E6:
         assert star.snia["Ia rate"] == 0
 
+
 @all_stars
-def test_snia_rate(star):
-    true_rate = sn_ia_check.sn_dtd(star.snia["age"], star.snia["metallicity"])
-    assert true_rate == star.snia["Ia rate"]
+def test_snia_late_rate(star):
+    if star.snia["age"] > 50E6:
+        true_rate = sn_ia_check.sn_dtd(star.snia["age"],
+                                       star.snia["metallicity"])
+        assert star.snia["Ia rate"] == approx(true_rate, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_snia_all_rate(star):
+    true_rate = sn_ia_check.sn_dtd(star.snia["age"],
+                                   star.snia["metallicity"])
+    assert star.snia["Ia rate"] == approx(true_rate, abs=0, rel=1E-7)
+
+
+# ==============================================================================
+#
+# AGB
+#
+# ==============================================================================
+@all_stars
+def test_agb_age(star):
+    test_age = star.agb["time"] - star.agb["birth"]
+    assert star.agb["age"] == test_age
