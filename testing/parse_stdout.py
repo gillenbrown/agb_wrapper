@@ -44,7 +44,7 @@ def parse_file(number):
 
     complete_stars = []
     timesteps = defaultdict(dict)
-    with open("../stdout", "r") as stdout:
+    with open("./stdout", "r") as stdout:
         for idx, line in enumerate(stdout):
             # if idx > 2000:
             #     continue
