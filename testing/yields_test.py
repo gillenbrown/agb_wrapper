@@ -7,7 +7,7 @@ import numpy as np
 from art_enrich import lib as tab
 
 # We need to initialize the table by doing the read in.
-tab.init_detailed_enrichment()
+tab.detailed_enrichment_init()
 
 r_tol = 1E-8
 a_tol = 0

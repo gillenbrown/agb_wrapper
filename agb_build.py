@@ -4,7 +4,7 @@ ffibuilder = FFI()
 # any functions that you want to import in Python must be here. 
 ffibuilder.cdef(
 """
-void init_detailed_enrichment(void);
+void detailed_enrichment_init(void);
 
 int *find_z_bound_idxs_agb_py(double);
 int *find_z_bound_idxs_winds_py(double);
