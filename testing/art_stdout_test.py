@@ -108,7 +108,8 @@ def test_snia_all_rate(star):
                                    star.snia["metallicity"])
     assert star.snia["Ia rate"] == approx(true_rate, abs=0, rel=1E-7)
 
-# TODO: need to fix this, since times are weird in ART
+# TODO: this has nothing to do with times, I think it's a mass unit thing.
+# I don't need anything in code time
 @all_stars
 def test_snia_rate_code_units(star):
     true_rate = sn_ia_check.sn_dtd(star.snia["age"],
@@ -126,36 +127,36 @@ def test_snia_num_sn(star):
 
 
 @all_stars
-def test_ejecta_c(star):
+def test_snia_ejecta_c(star):
     true_c = sn_ia_yields_interp["C"](star.snia["metallicity"])
     assert star.snia["C ejecta Msun"] == approx(true_c, abs=0, rel=1E-6)
 
 
 @all_stars
-def test_ejecta_n(star):
+def test_snia_ejecta_n(star):
     true_n = sn_ia_yields_interp["N"](star.snia["metallicity"])
     assert star.snia["N ejecta Msun"] == approx(true_n, abs=0, rel=1E-6)
 
 
 @all_stars
-def test_ejecta_o(star):
+def test_snia_ejecta_o(star):
     true_o = sn_ia_yields_interp["O"](star.snia["metallicity"])
     assert star.snia["O ejecta Msun"] == approx(true_o, abs=0, rel=1E-6)
 
 
 @all_stars
-def test_ejecta_fe(star):
+def test_snia_ejecta_fe(star):
     true_fe = sn_ia_yields_interp["Fe"](star.snia["metallicity"])
     assert star.snia["Fe ejecta Msun"] == approx(true_fe, abs=0, rel=1E-6)
 
 
 @all_stars
-def test_ejecta_metals(star):
+def test_snia_ejecta_metals(star):
     true_met = sn_ia_yields_interp["total_metals"](star.snia["metallicity"])
     assert star.snia["metals ejecta Msun"] == approx(true_met, abs=0, rel=1E-6)
 
 @all_stars
-def test_code_conversion_constant(star):
+def test_snia_code_conversion_constant(star):
     c_ratio = star.snia["C ejecta Msun"] / star.snia["C ejecta code"]
     n_ratio = star.snia["N ejecta Msun"] / star.snia["N ejecta code"]
     o_ratio = star.snia["O ejecta Msun"] / star.snia["O ejecta code"]
@@ -167,14 +168,14 @@ def test_code_conversion_constant(star):
     assert metals_ratio == approx(c_ratio, abs=0, rel=1E-7)
 
 @all_stars
-def test_code_mass_conversion_ejecta(star):
+def test_snia_code_mass_conversion_ejecta(star):
     for element in ["C", "N", "O", "Fe", "metals"]:
         msun = star.snia["{} ejecta Msun".format(element)] * u.Msun
         code = star.snia["{} ejecta code".format(element)]
         assert msun.to(code_mass).value == approx(code)
 
 @all_stars
-def test_adding_c_to_cell(star):
+def test_snia_adding_c_to_cell(star):
     old_density = star.snia["C current"]
     new_density = star.snia["C new"]
     added_mass = star.snia["C ejecta code"]  # per SN
@@ -183,7 +184,7 @@ def test_adding_c_to_cell(star):
 
 
 @all_stars
-def test_adding_n_to_cell(star):
+def test_snia_adding_n_to_cell(star):
     old_density = star.snia["N current"]
     new_density = star.snia["N new"]
     added_mass = star.snia["N ejecta code"]  # per SN
@@ -192,7 +193,7 @@ def test_adding_n_to_cell(star):
 
 
 @all_stars
-def test_adding_o_to_cell(star):
+def test_snia_adding_o_to_cell(star):
     old_density = star.snia["O current"]
     new_density = star.snia["O new"]
     added_mass = star.snia["O ejecta code"]  # per SN
@@ -201,7 +202,7 @@ def test_adding_o_to_cell(star):
 
 
 @all_stars
-def test_adding_fe_to_cell(star):
+def test_snia_adding_fe_to_cell(star):
     old_density = star.snia["Fe current"]
     new_density = star.snia["Fe new"]
     added_mass = star.snia["Fe ejecta code"]  # per SN
@@ -210,7 +211,7 @@ def test_adding_fe_to_cell(star):
 
 
 @all_stars
-def test_adding_metals_to_cell(star):
+def test_snia_adding_metals_to_cell(star):
     old_density = star.snia["Ia current"]
     new_density = star.snia["Ia new"]
     added_mass = star.snia["metals ejecta code"]  # per SN
@@ -227,3 +228,22 @@ def test_adding_metals_to_cell(star):
 def test_agb_age(star):
     test_age = star.agb["time"] - star.agb["birth"]
     assert star.agb["age"] == test_age
+
+
+@all_stars
+def test_agb_dt(star):
+    test_dt = star.agb["next"] - star.agb["time"]
+    assert star.snia["dt"] == test_dt
+
+
+@all_stars
+def test_agb_vol(star):
+    assert star.agb["1/vol"] == star.agb["true 1/vol"]
+
+
+@all_stars
+def test_agb_total_metallicity(star):
+    test_total_z = star.agb["metallicity II"] + \
+                   star.agb["metallicity Ia"] + \
+                   star.agb["metallicity AGB"]
+    assert star.agb["metallicity"] == test_total_z
