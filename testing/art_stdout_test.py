@@ -331,8 +331,93 @@ def test_agb_ejecta_c_c_code(star):
 
 
 @all_stars
+def test_agb_ejecta_n_c_code(star):
+    true_n = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
+                                               star.agb["metallicity"],
+                                               star.agb["stellar mass Msun"],
+                                               star.agb["dt"])[1]
+    assert star.agb["N ejecta Msun"] == approx(true_n, abs=0, rel=1E-6)
+
+
+@all_stars
+def test_agb_ejecta_o_c_code(star):
+    true_o = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
+                                               star.agb["metallicity"],
+                                               star.agb["stellar mass Msun"],
+                                               star.agb["dt"])[2]
+    assert star.agb["O ejecta Msun"] == approx(true_o, abs=0, rel=1E-6)
+
+
+@all_stars
+def test_agb_ejecta_fe_c_code(star):
+    true_fe = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
+                                                star.agb["metallicity"],
+                                                star.agb["stellar mass Msun"],
+                                                star.agb["dt"])[3]
+    assert star.agb["initial Fe ejecta Msun"] == approx(true_fe, abs=0, rel=1E-6)
+
+
+@all_stars
+def test_agb_ejecta_met_c_code(star):
+    true_met = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
+                                                 star.agb["metallicity"],
+                                                 star.agb["stellar mass Msun"],
+                                                 star.agb["dt"])[4]
+    assert star.agb["initial metals ejecta Msun"] == approx(true_met, abs=0, rel=1E-6)
+
+
+@all_stars
+def test_agb_ejecta_tot_c_code(star):
+    true_ej = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
+                                                 star.agb["metallicity"],
+                                                 star.agb["stellar mass Msun"],
+                                                 star.agb["dt"])[5]
+    assert star.agb["total ejecta Msun"] == approx(true_ej, abs=0, rel=1E-6)
+# =======
+
+@all_stars
 def test_agb_ejecta_c_py_code(star):
     true_c = mass_loss_agb(star.agb["age"], star.agb["dt"],
                            star.agb["metallicity"], "C") * star.agb["stellar mass Msun"]
 
     assert star.agb["C ejecta Msun"] == approx(true_c, abs=0, rel=1E-1)
+
+
+@all_stars
+def test_agb_ejecta_n_py_code(star):
+    true_n = mass_loss_agb(star.agb["age"], star.agb["dt"],
+                           star.agb["metallicity"], "N") * star.agb["stellar mass Msun"]
+
+    assert star.agb["N ejecta Msun"] == approx(true_n, abs=0, rel=1E-1)
+
+
+@all_stars
+def test_agb_ejecta_o_py_code(star):
+    true_o = mass_loss_agb(star.agb["age"], star.agb["dt"],
+                           star.agb["metallicity"], "O") * star.agb["stellar mass Msun"]
+
+    assert star.agb["O ejecta Msun"] == approx(true_o, abs=0, rel=1E-1)
+
+
+@all_stars
+def test_agb_ejecta_fe_py_code(star):
+    true_fe = mass_loss_agb(star.agb["age"], star.agb["dt"],
+                            star.agb["metallicity"], "Fe") * star.agb["stellar mass Msun"]
+
+    assert star.agb["initial Fe ejecta Msun"] == approx(true_fe, abs=0, rel=1E-1)
+
+
+@all_stars
+def test_agb_ejecta_met_py_code(star):
+    true_met = mass_loss_agb(star.agb["age"], star.agb["dt"],
+                             star.agb["metallicity"], "total_metals") * star.agb["stellar mass Msun"]
+
+    assert star.agb["initial metals ejecta Msun"] == approx(true_met, abs=0, rel=1E-1)
+
+
+@all_stars
+def test_agb_ejecta_tot_py_code(star):
+    true_ej = mass_loss_agb(star.agb["age"], star.agb["dt"],
+                             star.agb["metallicity"], "total") * star.agb["stellar mass Msun"]
+
+    assert star.agb["total ejecta Msun"] == approx(true_ej, abs=0, rel=1E-1)
