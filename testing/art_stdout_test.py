@@ -11,6 +11,8 @@ import numpy as np
 import tabulation
 
 import parse_stdout
+from art_enrich import lib as c_code
+c_code.detailed_enrichment_init()
 
 """
 This file tests the implementation of the code directly in ART by parsing the
@@ -20,8 +22,15 @@ stdout file generated as it runs and checking that what's written is correct.
 imf = tabulation.IMF("Kroupa", 0.1, 50)
 lifetimes = tabulation.Lifetimes("Raiteri_96")
 number_sn_ia = 1.6E-3
-sn_ia_check = tabulation.SNIa("ART power law", "Nomoto_18", lifetimes, imf,
-                              number_sn_ia=number_sn_ia)
+ssp_check = tabulation.SSPYields("Kroupa", 0.1, 50, 1,
+                                 "Raiteri_96",
+                                 "Kobayashi_06", 0.5, 8, 50,
+                                 "art power law", "Nomoto_18",
+                                 {"number_sn_ia":1.6E-3},
+                                 "NuGrid", 0.1, 8)
+sn_ia_check = ssp_check.sn_ia_model
+agb_check = ssp_check.agb_model
+
 # Create yields information to check against
 sn_ia_yields_interp = dict()
 elts = ["C", "N", "O", "Fe", "total_metals"]
@@ -33,6 +42,22 @@ for elt in elts:
                                   kind="linear", bounds_error=False,
                                   fill_value=(yield_z_low, yield_z_high))
     sn_ia_yields_interp[elt] = interp
+
+def mass_loss_agb(time, dt, z, elt):
+    # pick the indices
+    agb_z = ssp_check.agb_model.metallicities
+    agb_z_idx = c_code.find_z_bound_idxs_agb_py(z)
+    z0 = agb_z[agb_z_idx[0]]
+    z1 = agb_z[agb_z_idx[1]]
+
+    true_c_0 = ssp_check.mass_lost_end_ms(elt, time, time + dt, z0, "AGB")
+    true_c_1 = ssp_check.mass_lost_end_ms(elt, time, time + dt, z1, "AGB")
+
+    interp = interpolate.interp1d(x=[z0, z1], y=[true_c_0, true_c_1],
+                                  kind="linear", bounds_error=False,
+                                  fill_value=(true_c_0, true_c_1))
+    return interp(z)
+
 
 # create the code units to check against
 code_length = u.def_unit("code_length", 4 * u.Mpc / 128)
@@ -81,6 +106,32 @@ def test_snia_vol(star):
 
 
 @all_stars
+def test_snia_mass_factor_consistency(star):
+    factor = star.snia["Msol_to_code_mass"]
+    inv_factor = star.snia["1/Msol_to_code_mass"]
+
+    assert 1.0 / factor == approx(inv_factor, abs=0, rel=1E-10)
+
+
+@all_stars
+def test_snia_mass_factor_value(star):
+    factor = star.snia["Msol_to_code_mass"]
+    inv_factor = star.snia["1/Msol_to_code_mass"]
+
+    assert (1.0 * u.Msun).to(code_mass).value == approx(factor)
+    assert (1.0 * code_mass).to(u.Msun).value == approx(inv_factor)
+
+
+@all_stars
+def test_snia_mass_conversion(star):
+    msun = star.snia["stellar mass Msun"]
+    code = star.snia["stellar mass code"]
+
+    assert (msun * u.Msun).to(code_mass).value == approx(code)
+    assert (code * code_mass).to(u.Msun).value == approx(msun)
+
+
+@all_stars
 def test_snia_total_metallicity(star):
     test_total_z = star.snia["metallicity II"] + \
                    star.snia["metallicity Ia"] + \
@@ -108,21 +159,12 @@ def test_snia_all_rate(star):
                                    star.snia["metallicity"])
     assert star.snia["Ia rate"] == approx(true_rate, abs=0, rel=1E-7)
 
-# TODO: this has nothing to do with times, I think it's a mass unit thing.
-# I don't need anything in code time
-@all_stars
-def test_snia_rate_code_units(star):
-    true_rate = sn_ia_check.sn_dtd(star.snia["age"],
-                                   star.snia["metallicity"]) / u.year
-    assert star.snia["Ia rate code"] == approx(true_rate.to(1/code_time).value,
-                                               abs=0, rel=1E-7)
-
 
 @all_stars
 def test_snia_num_sn(star):
     true_rate = sn_ia_check.sn_dtd(star.snia["age"],
                                    star.snia["metallicity"])
-    true_num = true_rate * star.snia["dt"] * star.snia["stellar mass"]
+    true_num = true_rate * star.snia["dt"] * star.snia["stellar mass Msun"]
     assert star.snia["num Ia"] == approx(true_num, abs=0, rel=1E-7)
 
 
@@ -242,8 +284,55 @@ def test_agb_vol(star):
 
 
 @all_stars
+def test_agb_mass_factor_consistency(star):
+    factor = star.agb["Msol_to_code_mass"]
+    inv_factor = star.agb["1/Msol_to_code_mass"]
+
+    assert 1.0 / factor == approx(inv_factor, abs=0, rel=1E-10)
+
+
+@all_stars
+def test_agb_mass_factor_value(star):
+    factor = star.agb["Msol_to_code_mass"]
+    inv_factor = star.agb["1/Msol_to_code_mass"]
+
+    assert (1.0 * u.Msun).to(code_mass).value == approx(factor)
+    assert (1.0 * code_mass).to(u.Msun).value == approx(inv_factor)
+
+
+@all_stars
+def test_agb_mass_conversion(star):
+    msun = star.snia["stellar mass Msun"]
+    code = star.snia["stellar mass code"]
+
+    assert (msun * u.Msun).to(code_mass).value == approx(code)
+    assert (code * code_mass).to(u.Msun).value == approx(msun)
+
+
+@all_stars
 def test_agb_total_metallicity(star):
     test_total_z = star.agb["metallicity II"] + \
                    star.agb["metallicity Ia"] + \
                    star.agb["metallicity AGB"]
     assert star.agb["metallicity"] == test_total_z
+
+# Testing the ejected masses. I have tested the C functions separately, so what
+# I'll do here is to check that the values are what's returned by those
+# functions. I will also compare against the ejected masses my Python code
+# gives, but with a larger tolerance, since the interpolation is done a bit
+# differently between those two methods.
+@all_stars
+def test_agb_ejecta_c_c_code(star):
+    true_c = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
+                                               star.agb["metallicity"],
+                                               star.agb["stellar mass Msun"],
+                                               star.agb["dt"])[0]
+    assert star.agb["C ejecta Msun"] == approx(true_c, abs=0, rel=1E-6)
+
+
+@all_stars
+def test_agb_ejecta_c_py_code(star):
+    true_c = mass_loss_agb(star.agb["age"], star.agb["dt"],
+                           star.agb["metallicity"], "C") * star.agb["stellar mass Msun"]
+
+    assert star.agb["C ejecta Msun"] == approx(true_c, abs=0, rel=1E-1)

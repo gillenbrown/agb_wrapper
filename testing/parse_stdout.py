@@ -3,9 +3,9 @@ from collections import defaultdict
 
 
 class star_ejecta(object):
-    agb_values = 32
+    agb_values = 36
     snii_values = 1
-    snia_values = 34
+    snia_values = 37
     wind_values = 1
 
     def __init__(self, id, time):
