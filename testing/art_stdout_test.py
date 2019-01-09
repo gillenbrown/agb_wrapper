@@ -130,6 +130,19 @@ def test_snia_mass_conversion(star):
     assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
     assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
 
+@all_stars
+def test_snia_mass_range(star):
+    assert 1 < star.snia["stellar mass Msun"] < 1E8
+
+
+@all_stars
+def test_snia_metallicity_range(star):
+    # just a check that we're getting the correct thing
+    assert 0 < star.agb["metallicity II"] < 1
+    assert 0 < star.agb["metallicity Ia"] < 1
+    assert 0 < star.agb["metallicity AGB"] < 1
+    assert 0 < star.agb["metallicity Fe"] < star.agb["metallicity"]
+
 
 @all_stars
 def test_snia_total_metallicity(star):
@@ -212,9 +225,10 @@ def test_snia_code_conversion_constant(star):
 @all_stars
 def test_snia_code_mass_conversion_ejecta(star):
     for element in ["C", "N", "O", "Fe", "metals"]:
-        msun = star.snia["{} ejecta Msun".format(element)] * u.Msun
+        msun = star.snia["{} ejecta Msun".format(element)]
         code = star.snia["{} ejecta code".format(element)]
-        assert msun.to(code_mass).value == approx(code, abs=0, rel=1E-7)
+        assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
+        assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
 
 @all_stars
 def test_snia_adding_c_to_cell(star):
@@ -301,12 +315,26 @@ def test_agb_mass_factor_value(star):
 
 
 @all_stars
+def test_agb_mass_range(star):
+    assert 1 < star.agb["stellar mass Msun"] < 1E8
+
+
+@all_stars
 def test_agb_mass_conversion(star):
     msun = star.snia["stellar mass Msun"]
     code = star.snia["stellar mass code"]
 
     assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
     assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_metallicity_range(star):
+    # just a check that we're getting the correct thing
+    assert 0 < star.agb["metallicity II"] < 1
+    assert 0 < star.agb["metallicity Ia"] < 1
+    assert 0 < star.agb["metallicity AGB"] < 1
+    assert 0 < star.agb["metallicity Fe"] < star.agb["metallicity"]
 
 
 @all_stars
@@ -322,7 +350,7 @@ def test_agb_total_metallicity(star):
 # gives, but with a larger tolerance, since the interpolation is done a bit
 # differently between those two methods.
 @all_stars
-def test_agb_ejecta_c_c_code(star):
+def test_agb_ejecta_c_msun_c_code(star):
     true_c = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
                                                star.agb["metallicity"],
                                                star.agb["stellar mass Msun"],
@@ -331,7 +359,7 @@ def test_agb_ejecta_c_c_code(star):
 
 
 @all_stars
-def test_agb_ejecta_n_c_code(star):
+def test_agb_ejecta_n_msun_c_code(star):
     true_n = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
                                                star.agb["metallicity"],
                                                star.agb["stellar mass Msun"],
@@ -340,7 +368,7 @@ def test_agb_ejecta_n_c_code(star):
 
 
 @all_stars
-def test_agb_ejecta_o_c_code(star):
+def test_agb_ejecta_o_msun_c_code(star):
     true_o = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
                                                star.agb["metallicity"],
                                                star.agb["stellar mass Msun"],
@@ -349,7 +377,7 @@ def test_agb_ejecta_o_c_code(star):
 
 
 @all_stars
-def test_agb_ejecta_fe_c_code(star):
+def test_agb_ejecta_fe_msun_c_code(star):
     true_fe = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
                                                 star.agb["metallicity"],
                                                 star.agb["stellar mass Msun"],
@@ -358,7 +386,7 @@ def test_agb_ejecta_fe_c_code(star):
 
 
 @all_stars
-def test_agb_ejecta_met_c_code(star):
+def test_agb_ejecta_met_msun_c_code(star):
     true_met = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
                                                  star.agb["metallicity"],
                                                  star.agb["stellar mass Msun"],
@@ -367,16 +395,16 @@ def test_agb_ejecta_met_c_code(star):
 
 
 @all_stars
-def test_agb_ejecta_tot_c_code(star):
+def test_agb_ejecta_tot_msun_c_code(star):
     true_ej = c_code.get_ejecta_timestep_agb_py(star.agb["age"],
                                                  star.agb["metallicity"],
                                                  star.agb["stellar mass Msun"],
                                                  star.agb["dt"])[5]
     assert star.agb["total ejecta Msun"] == approx(true_ej, abs=0, rel=1E-6)
-# =======
+
 
 @all_stars
-def test_agb_ejecta_c_py_code(star):
+def test_agb_ejecta_c_msun_py_code(star):
     true_c = mass_loss_agb(star.agb["age"], star.agb["dt"],
                            star.agb["metallicity"], "C") * star.agb["stellar mass Msun"]
 
@@ -384,7 +412,7 @@ def test_agb_ejecta_c_py_code(star):
 
 
 @all_stars
-def test_agb_ejecta_n_py_code(star):
+def test_agb_ejecta_n_msun_py_code(star):
     true_n = mass_loss_agb(star.agb["age"], star.agb["dt"],
                            star.agb["metallicity"], "N") * star.agb["stellar mass Msun"]
 
@@ -392,7 +420,7 @@ def test_agb_ejecta_n_py_code(star):
 
 
 @all_stars
-def test_agb_ejecta_o_py_code(star):
+def test_agb_ejecta_o_msun_py_code(star):
     true_o = mass_loss_agb(star.agb["age"], star.agb["dt"],
                            star.agb["metallicity"], "O") * star.agb["stellar mass Msun"]
 
@@ -400,7 +428,7 @@ def test_agb_ejecta_o_py_code(star):
 
 
 @all_stars
-def test_agb_ejecta_fe_py_code(star):
+def test_agb_ejecta_fe_msun_py_code(star):
     true_fe = mass_loss_agb(star.agb["age"], star.agb["dt"],
                             star.agb["metallicity"], "Fe") * star.agb["stellar mass Msun"]
 
@@ -416,8 +444,82 @@ def test_agb_ejecta_met_py_code(star):
 
 
 @all_stars
-def test_agb_ejecta_tot_py_code(star):
+def test_agb_ejecta_tot_msun_py_code(star):
     true_ej = mass_loss_agb(star.agb["age"], star.agb["dt"],
                              star.agb["metallicity"], "total") * star.agb["stellar mass Msun"]
 
     assert star.agb["total ejecta Msun"] == approx(true_ej, abs=0, rel=1E-1)
+
+
+@all_stars
+def test_agb_code_mass_conversion_ejecta(star):
+    for element in ["C", "N", "O"]:
+        msun = star.agb["{} ejecta Msun".format(element)]
+        code = star.agb["{} ejecta code".format(element)]
+        assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
+        assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_fe_mass_conversion(star):
+    true_fe_msun = star.agb["metallicity Fe"] * star.agb["total ejecta Msun"]
+    true_fe_code = (true_fe_msun*u.Msun).to(code_mass).value
+    test_fe_code = star.agb["Fe ejecta code"]
+    assert true_fe_code == approx(test_fe_code, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_metals_mass_conversion(star):
+    initial_fe_msun = star.agb["initial Fe ejecta Msun"]
+    true_fe_msun = star.agb["metallicity Fe"] * star.agb["total ejecta Msun"]
+    change_in_fe_msun = initial_fe_msun - true_fe_msun
+    true_metals_msun = star.agb["initial metals ejecta Msun"] - change_in_fe_msun
+
+    true_metals_code = (true_metals_msun * u.Msun).to(code_mass).value
+    test_metals_code = star.agb["metals ejecta code"]
+    assert true_metals_code == approx(test_metals_code, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_adding_c_to_cell(star):
+    old_density = star.agb["C current"]
+    new_density = star.agb["C new"]
+    added_mass = star.agb["C ejecta code"]  # per SN
+    added_density = added_mass * star.agb["1/vol"]
+    assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_adding_n_to_cell(star):
+    old_density = star.agb["N current"]
+    new_density = star.agb["N new"]
+    added_mass = star.agb["N ejecta code"]  # per SN
+    added_density = added_mass * star.agb["1/vol"]
+    assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_adding_o_to_cell(star):
+    old_density = star.agb["O current"]
+    new_density = star.agb["O new"]
+    added_mass = star.agb["O ejecta code"]  # per SN
+    added_density = added_mass * star.agb["1/vol"]
+    assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_adding_fe_to_cell(star):
+    old_density = star.agb["Fe current"]
+    new_density = star.agb["Fe new"]
+    added_mass = star.agb["Fe ejecta code"]  # per SN
+    added_density = added_mass * star.agb["1/vol"]
+    assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_agb_adding_met_to_cell(star):
+    old_density = star.agb["AGB current"]
+    new_density = star.agb["AGB new"]
+    added_mass = star.agb["metals ejecta code"]  # per SN
+    added_density = added_mass * star.agb["1/vol"]
+    assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
