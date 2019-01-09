@@ -108,7 +108,7 @@ def test_snia_all_rate(star):
                                    star.snia["metallicity"])
     assert star.snia["Ia rate"] == approx(true_rate, abs=0, rel=1E-7)
 
-
+# TODO: need to fix this, since times are weird in ART
 @all_stars
 def test_snia_rate_code_units(star):
     true_rate = sn_ia_check.sn_dtd(star.snia["age"],
@@ -166,6 +166,12 @@ def test_code_conversion_constant(star):
     assert fe_ratio == approx(c_ratio, abs=0, rel=1E-7)
     assert metals_ratio == approx(c_ratio, abs=0, rel=1E-7)
 
+@all_stars
+def test_code_mass_conversion_ejecta(star):
+    for element in ["C", "N", "O", "Fe", "metals"]:
+        msun = star.snia["{} ejecta Msun".format(element)] * u.Msun
+        code = star.snia["{} ejecta code".format(element)]
+        assert msun.to(code_mass).value == approx(code)
 
 @all_stars
 def test_adding_c_to_cell(star):
@@ -211,8 +217,7 @@ def test_adding_metals_to_cell(star):
     added_density = added_mass * star.snia["num Ia"] * star.snia["1/vol"]
     assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
 
-#TODO: check that I've done all the testing of everything in SNIa
-#TODO: need to check that the conversion to code masses and times is working okay
+
 # ==============================================================================
 #
 # AGB
