@@ -118,8 +118,8 @@ def test_snia_mass_factor_value(star):
     factor = star.snia["Msol_to_code_mass"]
     inv_factor = star.snia["1/Msol_to_code_mass"]
 
-    assert (1.0 * u.Msun).to(code_mass).value == approx(factor)
-    assert (1.0 * code_mass).to(u.Msun).value == approx(inv_factor)
+    assert (1.0 * u.Msun).to(code_mass).value == approx(factor, abs=0, rel=1E-7)
+    assert (1.0 * code_mass).to(u.Msun).value == approx(inv_factor, abs=0, rel=1E-7)
 
 
 @all_stars
@@ -127,8 +127,8 @@ def test_snia_mass_conversion(star):
     msun = star.snia["stellar mass Msun"]
     code = star.snia["stellar mass code"]
 
-    assert (msun * u.Msun).to(code_mass).value == approx(code)
-    assert (code * code_mass).to(u.Msun).value == approx(msun)
+    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
+    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
 
 
 @all_stars
@@ -214,7 +214,7 @@ def test_snia_code_mass_conversion_ejecta(star):
     for element in ["C", "N", "O", "Fe", "metals"]:
         msun = star.snia["{} ejecta Msun".format(element)] * u.Msun
         code = star.snia["{} ejecta code".format(element)]
-        assert msun.to(code_mass).value == approx(code)
+        assert msun.to(code_mass).value == approx(code, abs=0, rel=1E-7)
 
 @all_stars
 def test_snia_adding_c_to_cell(star):
@@ -296,8 +296,8 @@ def test_agb_mass_factor_value(star):
     factor = star.agb["Msol_to_code_mass"]
     inv_factor = star.agb["1/Msol_to_code_mass"]
 
-    assert (1.0 * u.Msun).to(code_mass).value == approx(factor)
-    assert (1.0 * code_mass).to(u.Msun).value == approx(inv_factor)
+    assert (1.0 * u.Msun).to(code_mass).value == approx(factor, abs=0, rel=1E-7)
+    assert (1.0 * code_mass).to(u.Msun).value == approx(inv_factor, abs=0, rel=1E-7)
 
 
 @all_stars
@@ -305,8 +305,8 @@ def test_agb_mass_conversion(star):
     msun = star.snia["stellar mass Msun"]
     code = star.snia["stellar mass code"]
 
-    assert (msun * u.Msun).to(code_mass).value == approx(code)
-    assert (code * code_mass).to(u.Msun).value == approx(msun)
+    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
+    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
 
 
 @all_stars
