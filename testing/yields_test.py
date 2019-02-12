@@ -469,7 +469,7 @@ def test_double_alignment_sn(age, z):
 
 @pytest.mark.parametrize("age", exact_value_ages_big)
 @pytest.mark.parametrize("z", exact_value_zs_big)
-def test_double_alignment_sinds(age, z):
+def test_double_alignment_winds(age, z):
     """
     Check the yields when they line up exactly with one of the time and
     metallicity steps.
@@ -528,43 +528,42 @@ def test_age_alignment_winds():
 # Checking cases where metallicity aligns but not age
 #
 # ------------------------------------------------------------------------------
-def test_z_alignment_agb():
+@pytest.mark.parametrize("age", exact_value_ages_agb)
+@pytest.mark.parametrize("z", exact_value_zs_agb)
+def test_z_alignment_agb(age, z):
     """
     Test when the age matches one of the metallicities, but the age does not.
-    These are calculated by hand.
+    Since we don't interpolate in age, this is just the rate at the age below.
     """
-    age = 6.6e9
-    z = 0.006
-    answer = [3.2062130240466363e-15, 1.0474256813213504e-15,
-              2.2510376609181443e-14, 4.3740128224435275e-16,
-              3.0494667257711925e-14, 5.065734534855477e-12]
-    rates = tab.get_ejecta_rate_agb_py(age, z)
+    new_age = age + 10  # years
+    answer = exact_rates["AGB"][z][age]
+    rates = tab.get_ejecta_rate_agb_py(new_age, z)
     for idx in range(n_fields_agb):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
-def test_z_alignment_sn_ii():
+@pytest.mark.parametrize("age", exact_value_ages_big)
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_z_alignment_sn_ii(age, z):
     """
     Test when the age matches one of the metallicities, but the age does not.
-    These are calculated by hand.
+    Since we don't interpolate in age, this is just the rate at the age below.
     """
-    age = 1.14e7
-    z = 0
-    answer = [7.844304362416108e-11, 8.483107852348994e-13,
-              3.5254087248322143e-10, 3.3009920134228184e-11,
-              7.016760805369128e-10]
-    rates = tab.get_ejecta_rate_sn_ii_py(age, z)
+    new_age = age + 10  # years
+    answer = exact_rates["SN"][z][age]
+    rates = tab.get_ejecta_rate_sn_ii_py(new_age, z)
     for idx in range(n_fields_sn_ii):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
-def test_z_alignment_winds():
+@pytest.mark.parametrize("age", exact_value_ages_big)
+@pytest.mark.parametrize("z", exact_value_zs_big)
+def test_z_alignment_winds(age, z):
     """
     Test when the age matches one of the metallicities, but the age does not.
-    These are calculated by hand.
+    Since we don't interpolate in age, this is just the rate at the age below.
     """
-    age = 1e7
-    z = 0.004
-    answer = [1.8475617002294164e-10]
-    rates = tab.get_ejecta_rate_winds_py(age, z)
+    new_age = age + 10  # years
+    answer = exact_rates["winds"][z][age]
+    rates = tab.get_ejecta_rate_winds_py(new_age, z)
     for idx in range(n_fields_winds):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
@@ -579,9 +578,9 @@ def test_nonalignment_agb():
     calculate by hand."""
     age = 6e9
     z = 0.009
-    answer = [8.02793380332707e-15, 3.732804502951435e-15,
-              2.7129383532331632e-14, 3.217899362624093e-15,
-              5.249171289911456e-14, 5.7331290535283075e-12]
+    answer = [8.07158e-15, 3.7530774999999995e-15,
+              2.7277375e-14, 3.2353622499999994e-15,
+              5.2777449999999995e-14, 5.7644150000000005e-12]
     rates = tab.get_ejecta_rate_agb_py(age, z)
     for idx in range(n_fields_agb):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
@@ -592,9 +591,8 @@ def test_nonalignment_sn_ii():
     calculate by hand."""
     age = 1e7
     z = 0.0001
-    answer = [8.813877138159571e-11, 1.4183695405556967e-12,
-              4.5754250734132045e-10, 3.812865423910273e-11,
-              8.755298605404028e-10]
+    answer = [8.814016999999999e-11, 1.4183923e-12, 4.575498e-10,
+              3.812926e-11, 8.755437999999999e-10]
     rates = tab.get_ejecta_rate_sn_ii_py(age, z)
     for idx in range(n_fields_sn_ii):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
@@ -605,7 +603,7 @@ def test_nonalignment_winds():
     calculate by hand."""
     age = 2e7
     z = 0.002
-    answer = [1.3433394997876858e-11]
+    answer = [1.3434433333333334e-11]
     rates = tab.get_ejecta_rate_winds_py(age, z)
     for idx in range(n_fields_winds):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
@@ -668,9 +666,9 @@ def test_nonalignment_timestep_agb():
 
     m = 10 ** np.random.uniform(2, 7)
     dt = 10 ** np.random.uniform(2, 4)
-    rates = [8.02793380332707e-15, 3.732804502951435e-15,
-             2.7129383532331632e-14, 3.217899362624093e-15,
-             5.249171289911456e-14, 5.7331290535283075e-12]
+    rates = [8.07158e-15, 3.7530774999999995e-15,
+             2.7277375e-14, 3.2353622499999994e-15,
+             5.2777449999999995e-14, 5.7644150000000005e-12]
     answers = [r * m * dt for r in rates]
     ejecta = tab.get_ejecta_timestep_agb_py(age, z, m, dt)
     for idx in range(n_fields_agb):
@@ -684,9 +682,8 @@ def test_nonalignment_timestep_sn_ii():
     z = 0.0001
     m = 10 ** np.random.uniform(2, 7)
     dt = 10 ** np.random.uniform(2, 4)
-    rates = [8.813877138159571e-11, 1.4183695405556967e-12,
-             4.5754250734132045e-10, 3.812865423910273e-11,
-             8.755298605404028e-10]
+    rates = [8.814016999999999e-11, 1.4183923e-12, 4.575498e-10,
+             3.812926e-11, 8.755437999999999e-10]
     answers = [r * m * dt for r in rates]
     ejecta = tab.get_ejecta_timestep_snii_py(age, z, m, dt)
     for idx in range(n_fields_sn_ii):
@@ -700,7 +697,7 @@ def test_nonalignment_timestep_winds():
     z = 0.002
     m = 10 ** np.random.uniform(2, 7)
     dt = 10 ** np.random.uniform(2, 4)
-    rates = [1.3433394997876858e-11]
+    rates = [1.3434433333333334e-11]
     answers = [r * m * dt for r in rates]
 
     ejecta = tab.get_ejecta_timestep_winds_py(age, z, m, dt)
