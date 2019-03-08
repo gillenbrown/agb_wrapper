@@ -398,6 +398,37 @@ def test_end_ms_total_metallicity(star):
                    star.end_ms["metallicity AGB"]
     assert star.end_ms["metallicity"] == test_total_z
 
+# Simple test of the ejecta depending on the timing
+@all_stars
+def test_end_ms_simple(star):
+    if star.end_ms["age"] < 30E6:  # SN only
+        assert star.end_ms["AGB C ejecta Msun"] == 0
+        assert star.end_ms["AGB N ejecta Msun"] == 0
+        assert star.end_ms["AGB O ejecta Msun"] == 0
+        assert star.end_ms["AGB initial Fe ejecta Msun"] == 0
+        assert star.end_ms["AGB initial metals ejecta Msun"] == 0
+        assert star.end_ms["AGB total ejecta Msun"] == 0
+
+        assert star.end_ms["SNII C ejecta Msun"] > 0
+        assert star.end_ms["SNII N ejecta Msun"] > 0
+        assert star.end_ms["SNII O ejecta Msun"] > 0
+        assert star.end_ms["SNII Fe ejecta Msun"] > 0
+        assert star.end_ms["SNII metals ejecta Msun"] > 0
+    elif star.end_ms["age"] > 50E6:  # AGB only
+        assert star.end_ms["AGB C ejecta Msun"] > 0
+        assert star.end_ms["AGB N ejecta Msun"] > 0
+        assert star.end_ms["AGB O ejecta Msun"] > 0
+        assert star.end_ms["AGB initial Fe ejecta Msun"] > 0
+        assert star.end_ms["AGB initial metals ejecta Msun"] > 0
+        assert star.end_ms["AGB total ejecta Msun"] > 0
+
+        assert star.end_ms["SNII C ejecta Msun"] == 0
+        assert star.end_ms["SNII N ejecta Msun"] == 0
+        assert star.end_ms["SNII O ejecta Msun"] == 0
+        assert star.end_ms["SNII Fe ejecta Msun"] == 0
+        assert star.end_ms["SNII metals ejecta Msun"] == 0
+
+
 # Testing the ejected masses. I have tested the C functions separately, so what
 # I'll do here is to check that the values are what's returned by those
 # functions. I will also compare against the ejected masses my Python code
