@@ -3,8 +3,8 @@ from collections import defaultdict
 
 
 class star_ejecta(object):
-    end_ms_values = 47  # SNII and AGB, since they're together in ART
-    snia_values = 37
+    end_ms_values = 50  # SNII and AGB, since they're together in ART
+    snia_values = 38
     wind_values = 1
 
     def __init__(self, id, time):
