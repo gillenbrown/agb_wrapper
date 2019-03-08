@@ -3,33 +3,28 @@ from collections import defaultdict
 
 
 class star_ejecta(object):
-    agb_values = 36
-    snii_values = 1
+    end_ms_values = 36  # SNII and AGB, since they're together in ART
     snia_values = 37
     wind_values = 1
 
     def __init__(self, id, time):
         self.id = id
         self.snia = {"time": time}
-        self.snii = {"time": time}
-        self.agb = {"time": time}
+        self.end_ms = {"time": time}
         self.winds = {"time": time}
 
     def is_complete(self):
         return (len(self.snia)  == self.snia_values and
-                len(self.snii)  == self.snii_values and
-                len(self.agb)   == self.agb_values  and
+                len(self.end_ms)  == self.end_ms_values and
                 len(self.winds) == self.wind_values)
 
     def set_value(self, source, parameter, value):
-        if source == "SNII":
-            parameter_dict = self.snii
-        elif source == "SNIa":
+        if source == "SNIa":
             parameter_dict = self.snia
         elif source == "winds":
             parameter_dict = self.winds
-        elif source == "AGB":
-            parameter_dict = self.agb
+        elif source == "AGB/SNII":
+            parameter_dict = self.end_ms
         else:
             raise ValueError("Source {} not recognized.".format(source))
 
