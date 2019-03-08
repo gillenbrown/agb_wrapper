@@ -89,8 +89,16 @@ def all_stars(func):
 #
 # ==============================================================================
 @all_stars
+def test_snia_ave_age_range(star):
+    """Check that ave_birth is past particle birth, but that it's not past
+    15 Myr, the end of particle formation"""
+    diff = star.snia["ave_birth"] - star.snia["birth"]
+    assert 0 < diff < 15E6
+
+
+@all_stars
 def test_snia_age(star):
-    test_age = star.snia["time"] - star.snia["birth"]
+    test_age = star.snia["time"] - star.snia["ave_birth"]
     assert star.snia["age"] == test_age
 
 
@@ -318,8 +326,16 @@ def test_snia_adding_metals_to_cell(star):
 #
 # ==============================================================================
 @all_stars
+def test_snia_ave_age_range(star):
+    """Check that ave_birth is past particle birth, but that it's not past
+    15 Myr, the end of particle formation"""
+    diff = star.snia["ave_birth"] - star.snia["birth"]
+    assert 0 < diff < 15E6
+
+
+@all_stars
 def test_agb_age(star):
-    test_age = star.agb["time"] - star.agb["birth"]
+    test_age = star.agb["time"] - star.agb["ave_birth"]
     assert star.agb["age"] == test_age
 
 
