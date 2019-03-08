@@ -326,10 +326,10 @@ def test_snia_adding_metals_to_cell(star):
 #
 # ==============================================================================
 @all_stars
-def test_snia_ave_age_range(star):
+def test_agb_ave_age_range(star):
     """Check that ave_birth is past particle birth, but that it's not past
     15 Myr, the end of particle formation"""
-    diff = star.snia["ave_birth"] - star.snia["birth"]
+    diff = star.agb["ave_birth"] - star.agb["birth"]
     assert 0 < diff < 15E6
 
 
