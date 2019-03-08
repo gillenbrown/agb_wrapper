@@ -3,7 +3,7 @@ from collections import defaultdict
 
 
 class star_ejecta(object):
-    end_ms_values = 36  # SNII and AGB, since they're together in ART
+    end_ms_values = 47  # SNII and AGB, since they're together in ART
     snia_values = 37
     wind_values = 1
 
