@@ -638,12 +638,12 @@ def test_sn_ii_ejecta_met_msun_c_code(star):
 
 @all_stars
 def test_end_ms_code_mass_conversion_ejecta(star):
-    for source in ["AGB", "SNII"]:
-        for element in ["C", "N", "O"]:
-            msun = star.end_ms["{} {} ejecta Msun".format(source, element)]
-            code = star.end_ms["{} {} ejecta code".format(source, element)]
-            assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
-            assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
+    for source in ["AGB C", "AGB N", "AGB O",
+                   "SNII C", "SNII N", "SNII O", "SNII Fe", "SNII metals"]:
+        msun = star.end_ms["{} ejecta Msun".format(source)]
+        code = star.end_ms["{} ejecta code".format(source)]
+        assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
+        assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
 
 
 @all_stars
