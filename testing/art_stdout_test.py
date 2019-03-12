@@ -115,6 +115,7 @@ def test_snia_ave_age_range(star):
 def test_snia_age(star):
     test_age = star.snia["time"] - star.snia["ave_birth"]
     assert star.snia["age"] == test_age
+    assert star.snia["age"] > 0
 
 
 @all_stars
@@ -291,6 +292,18 @@ def test_snia_initial_densities_nonzero(star):
 
 
 @all_stars
+def test_end_ms_initial_densities_sun(star):
+    elts_tot = sum([star.snia["{} current".format(elt)]
+                    for elt in ["C", "N", "O", "Fe"]])
+    sources_tot = sum([star.snia["{} current".format(source)]
+                       for source in ["SNIa", "SNII", "AGB"]])
+
+    # not all elements are individually tracked, so the sum of elements must
+    # be less than the total
+    assert sources_tot > elts_tot
+
+
+@all_stars
 def test_snia_adding_c_to_cell(star):
     old_density = star.snia["C current"]
     new_density = star.snia["C new"]
@@ -352,6 +365,7 @@ def test_end_ms_ave_age_range(star):
 def test_end_ms_age(star):
     test_age = star.end_ms["time"] - star.end_ms["ave_birth"]
     assert star.end_ms["age"] == test_age
+    assert star.end_ms["age"] > 0
 
 
 @all_stars
@@ -403,7 +417,13 @@ def test_end_ms_metallicity_range(star):
     assert 0 < star.end_ms["metallicity Ia"] < 1
     assert 0 < star.end_ms["metallicity AGB"] < 1
     assert 0 < star.end_ms["metallicity"] < 1
+    assert 0 < star.end_ms["metallicity C"] < star.end_ms["metallicity"]
+    assert 0 < star.end_ms["metallicity N"] < star.end_ms["metallicity"]
+    assert 0 < star.end_ms["metallicity O"] < star.end_ms["metallicity"]
     assert 0 < star.end_ms["metallicity Fe"] < star.end_ms["metallicity"]
+    sum_elts = star.end_ms["metallicity C"] + star.end_ms["metallicity N"] + \
+               star.end_ms["metallicity O"] + star.end_ms["metallicity Fe"]
+    assert sum_elts < star.end_ms["metallicity"]
 
 
 @all_stars
@@ -416,7 +436,23 @@ def test_end_ms_total_metallicity(star):
 # Simple test of the ejecta depending on the timing
 @all_stars
 def test_end_ms_simple(star):
-    if 5E6 < star.end_ms["age"] < 30E6:  # SN only
+    if star.end_ms["age"] < 3E6: # winds only
+        assert star.end_ms["AGB C ejecta Msun"] == 0
+        assert star.end_ms["AGB N ejecta Msun"] == 0
+        assert star.end_ms["AGB O ejecta Msun"] == 0
+        assert star.end_ms["AGB initial Fe ejecta Msun"] == 0
+        assert star.end_ms["AGB initial metals ejecta Msun"] == 0
+        assert star.end_ms["AGB total ejecta Msun"] == 0
+
+        assert star.end_ms["SNII C ejecta Msun"] == 0
+        assert star.end_ms["SNII N ejecta Msun"] == 0
+        assert star.end_ms["SNII O ejecta Msun"] == 0
+        assert star.end_ms["SNII Fe ejecta Msun"] == 0
+        assert star.end_ms["SNII metals ejecta Msun"] == 0
+
+        assert star.end_ms["Winds total ejecta Msun"] > 0
+
+    elif 5E6 < star.end_ms["age"] < 30E6:  # SN only
         assert star.end_ms["AGB C ejecta Msun"] == 0
         assert star.end_ms["AGB N ejecta Msun"] == 0
         assert star.end_ms["AGB O ejecta Msun"] == 0
@@ -429,6 +465,9 @@ def test_end_ms_simple(star):
         assert star.end_ms["SNII O ejecta Msun"] > 0
         assert star.end_ms["SNII Fe ejecta Msun"] > 0
         assert star.end_ms["SNII metals ejecta Msun"] > 0
+
+        assert star.end_ms["Winds total ejecta Msun"] == 0
+
     elif star.end_ms["age"] > 50E6:  # AGB only
         assert star.end_ms["AGB C ejecta Msun"] > 0
         assert star.end_ms["AGB N ejecta Msun"] > 0
@@ -442,6 +481,8 @@ def test_end_ms_simple(star):
         assert star.end_ms["SNII O ejecta Msun"] == 0
         assert star.end_ms["SNII Fe ejecta Msun"] == 0
         assert star.end_ms["SNII metals ejecta Msun"] == 0
+
+        assert star.end_ms["Winds total ejecta Msun"] == 0
 
 
 # Testing the ejected masses. I have tested the C functions separately, so what
@@ -637,6 +678,15 @@ def test_sn_ii_ejecta_met_msun_c_code(star):
 
 
 @all_stars
+def test_winds_ejecta_total_msun_c_code(star):
+    true_ej = c_code.get_ejecta_timestep_winds_py(star.end_ms["age"],
+                                                  star.end_ms["metallicity"],
+                                                  star.end_ms["stellar mass Msun"],
+                                                  star.end_ms["dt"])[0]
+    assert star.end_ms["Winds total ejecta Msun"] == approx(true_ej, abs=0, rel=1E-6)
+
+
+@all_stars
 def test_end_ms_code_mass_conversion_ejecta(star):
     for source in ["AGB C", "AGB N", "AGB O",
                    "SNII C", "SNII N", "SNII O", "SNII Fe", "SNII metals"]:
@@ -665,11 +715,43 @@ def test_agb_metals_mass_conversion(star):
     test_metals_code = star.end_ms["AGB metals ejecta code"]
     assert true_metals_code == approx(test_metals_code, abs=0, rel=1E-7)
 
+@all_stars
+def test_winds_split_into_metals(star):
+    total_ejecta_msun = star.end_ms["Winds total ejecta Msun"]
+    total_ejecta_code = (total_ejecta_msun*u.Msun).to(code_mass).value
+    assert total_ejecta_code * star.end_ms["metallicity C"] == \
+           approx(star.end_ms["Winds C ejecta code"])
+    assert total_ejecta_code * star.end_ms["metallicity N"] == \
+           approx(star.end_ms["Winds N ejecta code"])
+    assert total_ejecta_code * star.end_ms["metallicity O"] == \
+           approx(star.end_ms["Winds O ejecta code"])
+    assert total_ejecta_code * star.end_ms["metallicity Fe"] == \
+           approx(star.end_ms["Winds Fe ejecta code"])
+    assert total_ejecta_code * star.end_ms["metallicity Ia"] == \
+           approx(star.end_ms["Winds SNIa ejecta code"])
+    assert total_ejecta_code * star.end_ms["metallicity II"] == \
+           approx(star.end_ms["Winds SNII ejecta code"])
+    assert total_ejecta_code * star.end_ms["metallicity AGB"] == \
+           approx(star.end_ms["Winds AGB ejecta code"])
+
 
 @all_stars
 def test_end_ms_initial_densities_nonzero(star):
-    for elt in ["C", "N", "O", "Fe", "AGB", "SNII"]:
+    for elt in ["C", "N", "O", "Fe", "AGB", "SNIa", "SNII"]:
         assert star.end_ms["{} current".format(elt)] > 0
+
+
+@all_stars
+def test_end_ms_initial_densities_sun(star):
+    elts_tot = sum([star.end_ms["{} current".format(elt)]
+                   for elt in ["C", "N", "O", "Fe"]])
+    sources_tot = sum([star.end_ms["{} current".format(source)]
+                   for source in ["SNIa", "SNII", "AGB"]])
+
+    # not all elements are individually tracked, so the sum of elements must
+    # be less than the total
+    assert sources_tot > elts_tot
+
 
 
 @all_stars
@@ -677,7 +759,8 @@ def test_end_ms_adding_c_to_cell(star):
     old_density = star.end_ms["C current"]
     new_density = star.end_ms["C new"]
     added_mass = star.end_ms["AGB C ejecta code"] + \
-                 star.end_ms["SNII C ejecta code"]
+                 star.end_ms["SNII C ejecta code"] + \
+                 star.end_ms["Winds C ejecta code"]
     added_density = added_mass * star.end_ms["1/vol"]
     assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
 
@@ -687,7 +770,8 @@ def test_end_ms_adding_n_to_cell(star):
     old_density = star.end_ms["N current"]
     new_density = star.end_ms["N new"]
     added_mass = star.end_ms["AGB N ejecta code"] + \
-                 star.end_ms["SNII N ejecta code"]
+                 star.end_ms["SNII N ejecta code"] + \
+                 star.end_ms["Winds N ejecta code"]
     added_density = added_mass * star.end_ms["1/vol"]
     assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
 
@@ -697,7 +781,8 @@ def test_end_ms_adding_o_to_cell(star):
     old_density = star.end_ms["O current"]
     new_density = star.end_ms["O new"]
     added_mass = star.end_ms["AGB O ejecta code"] + \
-                 star.end_ms["SNII O ejecta code"]
+                 star.end_ms["SNII O ejecta code"] + \
+                 star.end_ms["Winds O ejecta code"]
     added_density = added_mass * star.end_ms["1/vol"]
     assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
 
@@ -707,7 +792,8 @@ def test_end_ms_adding_fe_to_cell(star):
     old_density = star.end_ms["Fe current"]
     new_density = star.end_ms["Fe new"]
     added_mass = star.end_ms["AGB Fe ejecta code"] + \
-                 star.end_ms["SNII Fe ejecta code"]
+                 star.end_ms["SNII Fe ejecta code"] + \
+                 star.end_ms["Winds Fe ejecta code"]
     added_density = added_mass * star.end_ms["1/vol"]
     assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
 
@@ -716,7 +802,17 @@ def test_end_ms_adding_fe_to_cell(star):
 def test_agb_adding_met_to_cell(star):
     old_density = star.end_ms["AGB current"]
     new_density = star.end_ms["AGB new"]
-    added_mass = star.end_ms["AGB metals ejecta code"]
+    added_mass = star.end_ms["AGB metals ejecta code"] + \
+                 star.end_ms["Winds AGB ejecta code"]
+    added_density = added_mass * star.end_ms["1/vol"]
+    assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
+
+
+@all_stars
+def test_sn_ia_adding_met_to_cell(star):
+    old_density = star.end_ms["SNIa current"]
+    new_density = star.end_ms["SNIa new"]
+    added_mass = star.end_ms["Winds SNIa ejecta code"]
     added_density = added_mass * star.end_ms["1/vol"]
     assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
 
@@ -725,6 +821,7 @@ def test_agb_adding_met_to_cell(star):
 def test_sn_ii_adding_met_to_cell(star):
     old_density = star.end_ms["SNII current"]
     new_density = star.end_ms["SNII new"]
-    added_mass = star.end_ms["SNII metals ejecta code"]
+    added_mass = star.end_ms["SNII metals ejecta code"] + \
+                 star.end_ms["Winds SNII ejecta code"]
     added_density = added_mass * star.end_ms["1/vol"]
     assert old_density + added_density == approx(new_density, abs=0, rel=1E-7)
