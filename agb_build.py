@@ -36,12 +36,13 @@ double get_z_sn_ia(int);"""
 # But here, I'm only compiling this snippet, and so the order does matter. I 
 # could include the .h file in the .c file, but I think that could lead to 
 # issues in the full ART compilation. I don't want to risk that. It gets 
-# included below anyway. 
+# included below anyway.
+dir = "/Users/gillenb/code/art_cluster/src/sf/models/"
 
 ffibuilder.set_source("art_enrich",  # name of the output C extension
-                      '#include "feedback.detailed_enrich.h"',
+                      '#include "{}/feedback.detailed_enrich.h"'.format(dir),
                       define_macros=[("PY_TESTING", None),
                                      ("ENRICHMENT_ELEMENTS", None)],
-                      sources=['feedback.detailed_enrich.c'])   
+                      sources=[dir + "feedback.detailed_enrich.c"])
 
 ffibuilder.compile(verbose=True)
