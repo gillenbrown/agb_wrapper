@@ -170,28 +170,42 @@ a2_big = 1.99992e+07
 a3_big = 5e+07
 
 exact_rates["AGB"][0.0001][a1_agb] = [7.09127e-14, 5.69972e-13, 5.4067e-14,
+                                      4.67801e-15, 1.31265e-15, 1.44704e-16,
                                       1.69338e-15, 7.20228e-13, 1.17717e-09]
 exact_rates["AGB"][0.0001][a2_agb] = [1.25127e-13, 1.11558e-15, 2.63708e-14,
+                                      1.44388e-17, 7.35866e-18, 8.03264e-19,
                                       9.27275e-18, 1.52877e-13, 6.7587e-12]
 exact_rates["AGB"][0.0001][a3_agb] = [4.45291e-14, 3.97002e-16, 9.38457e-15,
+                                      5.13835e-18, 2.61873e-18, 2.85858e-19,
                                       3.2999e-18, 5.44045e-14, 2.40522e-12]
 exact_rates["AGB"][0.02][a1_agb] = [4.72688e-13, 9.11285e-12, 8.09145e-12,
+                                    9.56108e-13, 4.82016e-13, 8.50517e-14,
                                     1.63682e-12, 2.44475e-11, 1.13936e-09]
 exact_rates["AGB"][0.02][a2_agb] = [2.04009e-14, 1.01252e-14, 6.39979e-14,
+                                    4.99019e-15, 2.80841e-15,4.9592e-16,
                                     9.54084e-15, 1.33143e-13, 6.63505e-12]
 exact_rates["AGB"][0.02][a3_agb] = [6.24391e-15, 3.09892e-15, 1.95872e-14,
+                                    1.5273e-15, 8.59543e-16, 1.51782e-16,
                                     2.92007e-15, 4.07498e-14, 2.03073e-12]
 
 exact_rates["SN"][0][a1_big] = [1.99356e-10, 1.33188e-14, 2.66105e-09,
-                                7.26859e-11, 3.72347e-09]
+                                1.35527e-10, 6.14868e-11, 7.86659e-12,
+                                7.26859e-11, 3.72347e-09, 1.66666e-08,
+                                6.40274e-10, 5.83582e+42]
 exact_rates["SN"][0][a2_big] = [2.09617e-11, 5.17694e-13, 1.27298e-10,
-                                2.02901e-11, 2.32181e-10]
-exact_rates["SN"][0][a3_big] = [0, 0, 0, 0, 0]
+                                2.44489e-11, 6.80866e-12, 8.31066e-13,
+                                2.02901e-11, 2.32181e-10, 3.23358e-09,
+                                3.72503e-10, 3.72503e+41]
+exact_rates["SN"][0][a3_big] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 exact_rates["SN"][0.02][a1_big] = [1.12158e-10, 5.28931e-11, 1.54796e-09,
-                                   5.64704e-11, 2.53759e-09]
+                                   1.19411e-10, 6.11589e-11, 6.56735e-12,
+                                   5.64704e-11, 2.53759e-09, 1.14119e-08,
+                                   5.39199e-10, 6.52975e+42]
 exact_rates["SN"][0.02][a2_big] = [2.86939e-11, 1.27637e-11, 5.90797e-11,
-                                   2.3237e-11, 1.78902e-10]
-exact_rates["SN"][0.02][a3_big] = [0, 0, 0, 0, 0]
+                                   7.9546e-12, 1.04003e-11, 1.32371e-12,
+                                   2.3237e-11, 1.78902e-10, 2.95801e-09,
+                                   3.00415e-10, 3.00415e+41]
+exact_rates["SN"][0.02][a3_big] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 exact_rates["winds"][0][a1_big] = [0]
 exact_rates["winds"][0][a2_big] = [0]
@@ -492,8 +506,9 @@ def test_age_alignment_agb():
     age = 7.72281e+07
     z = 0.014
     rates = tab.get_ejecta_rate_agb_py(age, z)
-    answer = [3.916888e-13, 4.822066e-12, 3.767752e-12, 7.080042e-13,
-              1.1942716e-11, 7.068224e-10]
+    answer = [3.916888e-13, 4.822066e-12, 3.767752e-12, 4.245054e-13,
+              2.0852539999999997e-13, 3.679292e-14, 7.080042e-13,
+              1.1942715999999999e-11, 7.068224e-10]
     for idx in range(n_fields_agb):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
@@ -506,8 +521,10 @@ def test_age_alignment_sn_ii():
     z = 0.003
     rates = tab.get_ejecta_rate_sn_ii_py(age, z)
     answer = [5.549346666666668e-11, 3.0864996666666666e-11,
-              1.8916766666666664e-10, 3.163816666666667e-11,
-              4.862963333333333e-10]
+              1.8916766666666664e-10, 2.7593e-11, 2.0087066666666665e-11,
+              2.4657233333333334e-12, 3.163816666666667e-11,
+              4.862963333333333e-10, 5.556596666666667e-09,
+              3.5521133333333333e-10, 3.552113333333333e+41]
     for idx in range(n_fields_sn_ii):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
@@ -574,12 +591,13 @@ def test_z_alignment_winds(age, z):
 # ------------------------------------------------------------------------------
 def test_nonalignment_agb():
     """Test when neither age or metallicity are aligned, as will typically
-    be the case. I only do a few tests here since it's a lot of work to
-    calculate by hand."""
+    be the case. Here we go with the age that is lower than this timestep, and
+    interpolate in metallicity."""
     age = 6e9
     z = 0.009
-    answer = [8.07158e-15, 3.7530774999999995e-15,
-              2.7277375e-14, 3.2353622499999994e-15,
+    answer = [8.07158e-15, 3.7530774999999995e-15, 2.7277375e-14,
+              1.7720569999999998e-15, 1.0120364999999998e-15,
+              1.7232854999999995e-16, 3.2353622499999994e-15,
               5.2777449999999995e-14, 5.7644150000000005e-12]
     rates = tab.get_ejecta_rate_agb_py(age, z)
     for idx in range(n_fields_agb):
@@ -587,20 +605,22 @@ def test_nonalignment_agb():
 
 def test_nonalignment_sn_ii():
     """Test when neither age or metallicity are aligned, as will typically
-    be the case. I only do a few tests here since it's a lot of work to
-    calculate by hand."""
+    be the case. Here we go with the age that is lower than this timestep, and
+    interpolate in metallicity."""
     age = 1e7
     z = 0.0001
     answer = [8.814016999999999e-11, 1.4183923e-12, 4.575498e-10,
-              3.812926e-11, 8.755437999999999e-10]
+              4.295329e-11, 1.74734e-11, 2.419638e-12, 3.812926e-11,
+              8.755437999999999e-10, 7.240532999999999e-09,
+              4.896710999999999e-10, 6.6172330000000006e+41]
     rates = tab.get_ejecta_rate_sn_ii_py(age, z)
     for idx in range(n_fields_sn_ii):
         assert rates[idx] == pytest.approx(answer[idx], rel=r_tol, abs=a_tol)
 
 def test_nonalignment_winds():
     """Test when neither age or metallicity are aligned, as will typically
-    be the case. I only do a few tests here since it's a lot of work to
-    calculate by hand."""
+    be the case. Here we go with the age that is lower than this timestep, and
+    interpolate in metallicity."""
     age = 2e7
     z = 0.002
     answer = [1.3434433333333334e-11]
@@ -659,15 +679,16 @@ def test_double_alignment_timestep_winds(age, z):
 
 def test_nonalignment_timestep_agb():
     """Test when neither age or metallicity are aligned, as will typically
-    be the case. I only do a few tests here since it's a lot of work to
-    calculate by hand."""
+    be the case. Here we go with the age that is lower than this timestep, and
+    interpolate in metallicity."""
     age = 6e9
     z = 0.009
 
     m = 10 ** np.random.uniform(2, 7)
     dt = 10 ** np.random.uniform(2, 4)
-    rates = [8.07158e-15, 3.7530774999999995e-15,
-             2.7277375e-14, 3.2353622499999994e-15,
+    rates = [8.07158e-15, 3.7530774999999995e-15, 2.7277375e-14,
+             1.7720569999999998e-15, 1.0120364999999998e-15,
+             1.7232854999999995e-16, 3.2353622499999994e-15,
              5.2777449999999995e-14, 5.7644150000000005e-12]
     answers = [r * m * dt for r in rates]
     ejecta = tab.get_ejecta_timestep_agb_py(age, z, m, dt)
@@ -676,14 +697,16 @@ def test_nonalignment_timestep_agb():
 
 def test_nonalignment_timestep_sn_ii():
     """Test when neither age or metallicity are aligned, as will typically
-    be the case. I only do a few tests here since it's a lot of work to
-    calculate by hand."""
+    be the case. Here we go with the age that is lower than this timestep, and
+    interpolate in metallicity."""
     age = 1e7
     z = 0.0001
     m = 10 ** np.random.uniform(2, 7)
     dt = 10 ** np.random.uniform(2, 4)
     rates = [8.814016999999999e-11, 1.4183923e-12, 4.575498e-10,
-             3.812926e-11, 8.755437999999999e-10]
+             4.295329e-11, 1.74734e-11, 2.419638e-12, 3.812926e-11,
+             8.755437999999999e-10, 7.240532999999999e-09,
+             4.896710999999999e-10, 6.6172330000000006e+41]
     answers = [r * m * dt for r in rates]
     ejecta = tab.get_ejecta_timestep_snii_py(age, z, m, dt)
     for idx in range(n_fields_sn_ii):
@@ -691,8 +714,8 @@ def test_nonalignment_timestep_sn_ii():
 
 def test_nonalignment_timestep_winds():
     """Test when neither age or metallicity are aligned, as will typically
-    be the case. I only do a few tests here since it's a lot of work to
-    calculate by hand."""
+    be the case. Here we go with the age that is lower than this timestep, and
+    interpolate in metallicity."""
     age = 2e7
     z = 0.002
     m = 10 ** np.random.uniform(2, 7)
@@ -709,8 +732,10 @@ def test_nonalignment_timestep_winds():
 #
 # ------------------------------------------------------------------------------
 # first get the exact yields
-exact_yields_snia_01_solar = [0.0667, 1.3983e-08, 0.0995, 0.882064, 1.38398]
-exact_yields_snia_solar = [0.0475001, 1.10546e-05, 0.0500047, 0.899624, 1.37164]
+exact_yields_snia_01_solar = [0.0667, 1.3983e-08, 0.0995, 0.00868375, 0.076732,
+                              0.0142031, 0.882064, 1.38398]
+exact_yields_snia_solar = [0.0475001, 1.10546e-05, 0.0500047, 0.0048054,
+                           0.0818503, 0.00969994, 0.899624, 1.37164]
 
 # the yields only depend on metallicity, so we only have to test a few ranges
 @pytest.mark.parametrize("z", [-0.5, 0, 1E-4, 0.0019999])
@@ -751,11 +776,13 @@ def test_exact_high_metallicity_sn_ia():
 # ------------------------------------------------------------------------------
 @pytest.mark.parametrize("z, answers",
                          [(0.006, [0.06243335555555555, 2.467453444444444e-06,
-                                  0.08850104444444444, 0.8859662222222222,
-                                  1.3812377777777776]),
+                                   0.08850104444444444, 0.007821894444444444,
+                                   0.07786939999999999, 0.013202397777777777,
+                                   0.8859662222222222, 1.3812377777777776]),
                           (0.01, [0.0581667111111111, 4.920923888888888e-06,
-                                  0.07750208888888888, 0.8898684444444444,
-                                  1.3784955555555554])])
+                                  0.07750208888888888, 0.006960038888888888,
+                                  0.07900679999999999, 0.012201695555555555,
+                                  0.8898684444444444, 1.3784955555555554])])
 def test_interpolate_sn_ia(z, answers):
     """Metallicity less than the minimum should use the yields for minimum z"""
     yields = tab.get_yields_sn_ia_py(z)
