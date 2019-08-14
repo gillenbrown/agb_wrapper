@@ -10,26 +10,25 @@ int *find_z_bound_idxs_agb_py(double);
 int *find_z_bound_idxs_winds_py(double);
 int *find_z_bound_idxs_sn_ii_py(double);
 int *find_z_bound_idxs_sn_ia_py(double);
-int guess_age_idx_agb_py(double);
-int guess_age_idx_winds_py(double);
-int guess_age_idx_sn_ii_py(double);
-int *find_age_bound_idxs_agb_py(double);
-int *find_age_bound_idxs_winds_py(double);
-int *find_age_bound_idxs_sn_ii_py(double);
-double *get_ejecta_rate_agb_py(double, double);
-double *get_ejecta_rate_winds_py(double, double);
-double *get_ejecta_rate_sn_ii_py(double, double);
-double *get_ejecta_timestep_agb_py(double, double, double, double);
-double *get_ejecta_timestep_winds_py(double, double, double, double);
-double *get_ejecta_timestep_snii_py(double, double, double, double);
+int guess_mass_idx_winds_py(double);
+int *find_mass_bound_idxs_agb_py(double);
+int *find_mass_bound_idxs_sn_ii_py(double);
+int *find_mass_bound_idxs_hn_ii_py(double);
 double *get_yields_sn_ia_py(double);
-double get_ages_agb(int);
-double get_ages_sn_ii(int);
-double get_ages_winds(int);
+double get_masses_agb(int);
+double get_masses_sn_ii(int);
+double get_masses_hn_ii(int);
+double get_masses_winds(int);
 double get_z_winds(int);
 double get_z_agb(int);
 double get_z_sn_ii(int);
-double get_z_sn_ia(int);"""
+double get_z_sn_ia(int);
+double *get_yields_sn_ii_py(double, double, double, double, double);
+double *get_yields_raw_sn_ii_py(double, double);
+double *get_yields_raw_hn_ii_py(double, double);
+double *get_yields_raw_agb_py(double, double);
+double imf_integral_py(double, double);
+double extrapolate_py(double, double, double);"""
 )
 # in the .c file, order does matter for this compilation. In the full context of
 # ART it doesn't matter, since the .h file will be imported by the SF recipe.
