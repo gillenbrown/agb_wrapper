@@ -28,6 +28,7 @@ double *get_yields_raw_sn_ii_py(double, double);
 double *get_yields_raw_hn_ii_py(double, double);
 double *get_yields_raw_agb_py(double, double);
 double imf_integral_py(double, double);
+double interpolate_py(double, double, double, double, double);
 double extrapolate_py(double, double, double);"""
 )
 # in the .c file, order does matter for this compilation. In the full context of
