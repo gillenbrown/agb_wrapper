@@ -11,7 +11,7 @@ import numpy as np
 import tabulation
 
 import parse_stdout
-from art_enrich import lib as c_code
+from core_elts import lib as c_code
 c_code.detailed_enrichment_init()
 
 """

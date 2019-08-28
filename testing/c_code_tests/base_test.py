@@ -9,10 +9,11 @@ from scipy import interpolate
 import betterplotlib as bpl
 bpl.presentation_style()
 
-from art_enrich import lib as tab
+from core_elts import lib as core_elts
+# from core_no_elts import lib as core_no_elts
 
 # We need to initialize the table by doing the read in.
-tab.detailed_enrichment_init()
+core_elts.detailed_enrichment_init()
 
 
 # convenience function
@@ -125,10 +126,10 @@ def make_inbetween_values(values, min_allowed_value, max_allowed_value):
 #
 # ------------------------------------------------------------------------------
 @pytest.mark.parametrize("z_vals_truth, func",
-                         [(zs_agb, tab.get_z_agb),
-                          (zs_sn_ii, tab.get_z_sn_ii),
-                          (zs_winds, tab.get_z_winds),
-                          (zs_snia, tab.get_z_sn_ia)])
+                         [(zs_agb, core_elts.get_z_agb),
+                          (zs_sn_ii, core_elts.get_z_sn_ii),
+                          (zs_winds, core_elts.get_z_winds),
+                          (zs_snia, core_elts.get_z_sn_ia)])
 def test_metallicities(z_vals_truth, func):
     for idx in range(len(z_vals_truth)):
         truth = z_vals_truth[idx]
@@ -156,12 +157,12 @@ def test_metallicities(z_vals_truth, func):
                           [0.03,    4, 4],
                           [1.4,     4, 4]])
 def test_z_idxs_agb(z, true_idx_0, true_idx_1):
-    z_idx = tab.find_z_bound_idxs_agb_py(z)
+    z_idx = core_elts.find_z_bound_idxs_agb_py(z)
     assert z_idx[0] == true_idx_0
     assert z_idx[1] == true_idx_1
 
-@pytest.mark.parametrize("func", [tab.find_z_bound_idxs_winds_py,
-                                  tab.find_z_bound_idxs_sn_ii_py])
+@pytest.mark.parametrize("func", [core_elts.find_z_bound_idxs_winds_py,
+                                  core_elts.find_z_bound_idxs_sn_ii_py])
 @pytest.mark.parametrize("z, true_idx_0, true_idx_1",
                          [[-0.5,   0, 0],
                           [0,      0, 0],
@@ -190,7 +191,7 @@ def test_z_idxs_winds_sn_ii(func, z, true_idx_0, true_idx_1):
                           [0.03,   1, 1],
                           [1.4,    1, 1]])
 def test_z_idxs_sn_ia(z, true_idx_0, true_idx_1):
-    z_idx = tab.find_z_bound_idxs_sn_ia_py(z)
+    z_idx = core_elts.find_z_bound_idxs_sn_ia_py(z)
     assert z_idx[0] == true_idx_0
     assert z_idx[1] == true_idx_1
 
@@ -220,7 +221,7 @@ def test_z_idxs_sn_ia(z, true_idx_0, true_idx_1):
                           [8.0, 7, 7]
                           ])
 def test_m_idxs_agb(m, true_idx_0, true_idx_1):
-    m_idx = tab.find_mass_bound_idxs_agb_py(m)
+    m_idx = core_elts.find_mass_bound_idxs_agb_py(m)
     assert m_idx[0] == true_idx_0
     assert m_idx[1] == true_idx_1
 
@@ -244,7 +245,7 @@ def test_m_idxs_agb(m, true_idx_0, true_idx_1):
                           [50, 6, 6]
                           ])
 def test_m_idxs_sn(m, true_idx_0, true_idx_1):
-    m_idx = tab.find_mass_bound_idxs_sn_ii_py(m)
+    m_idx = core_elts.find_mass_bound_idxs_sn_ii_py(m)
     assert m_idx[0] == true_idx_0
     assert m_idx[1] == true_idx_1
 
@@ -260,7 +261,7 @@ def test_m_idxs_sn(m, true_idx_0, true_idx_1):
                           [40, 3, 3]
                           ])
 def test_m_idxs_hn(m, true_idx_0, true_idx_1):
-    m_idx = tab.find_mass_bound_idxs_hn_ii_py(m)
+    m_idx = core_elts.find_mass_bound_idxs_hn_ii_py(m)
     assert m_idx[0] == true_idx_0
     assert m_idx[1] == true_idx_1
 
@@ -278,7 +279,7 @@ def test_m_idxs_hn(m, true_idx_0, true_idx_1):
 def test_yields_agb_m_align_z_align(z, m):
     points_checked["AGB"].append([m, z])
     true_ejecta = ejecta_table["AGB"][z][m]
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
     for idx in range(len(true_ejecta)):
         assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
     points_passed["AGB"].append([m, z])
@@ -289,7 +290,7 @@ def test_yields_agb_m_align_z_align(z, m):
 def test_yields_sn_ii_m_align_z_align(z, m):
     points_checked["SN"].append([m, z])
     true_ejecta = ejecta_table["SN"][z][m]
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
     for idx in range(len(true_ejecta)):
         assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
     points_passed["SN"].append([m, z])
@@ -300,7 +301,7 @@ def test_yields_sn_ii_m_align_z_align(z, m):
 def test_yields_hn_ii_m_align_z_align(z, m):
     points_checked["HN"].append([m, z])
     true_ejecta = ejecta_table["HN"][z][m]
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
     for idx in range(len(true_ejecta)):
         assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
     points_passed["HN"].append([m, z])
@@ -330,7 +331,7 @@ def test_yields_agb_m_align_z_interp(z_idx, m):
     ejecta_high = ejecta_table["AGB"][z_high][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -362,7 +363,7 @@ def test_yields_sn_ii_m_align_z_interp(z_idx, m):
     ejecta_high = ejecta_table["SN"][z_high][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -393,7 +394,7 @@ def test_yields_hn_ii_m_align_z_interp(z_idx, m):
     ejecta_high = ejecta_table["HN"][z_high][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -427,7 +428,7 @@ def test_yields_agb_m_align_z_high(m):
     ejecta_max = ejecta_table["AGB"][z_max][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -450,7 +451,7 @@ def test_yields_sn_ii_m_align_z_high(m):
     ejecta_max = ejecta_table["SN"][z_max][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -473,7 +474,7 @@ def test_yields_hn_ii_m_align_z_high(m):
     ejecta_max = ejecta_table["HN"][z_max][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -502,7 +503,7 @@ def test_yields_agb_m_align_z_low(m):
     ejecta_min = ejecta_table["AGB"][z_min][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -525,7 +526,7 @@ def test_yields_sn_ii_m_align_z_low(m):
     ejecta_min = ejecta_table["SN"][z_min][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -548,7 +549,7 @@ def test_yields_hn_ii_m_align_z_low(m):
     ejecta_min = ejecta_table["HN"][z_min][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -581,7 +582,7 @@ def test_yields_agb_m_interp_z_align(m_idx, z):
     ejecta_high = ejecta_table["AGB"][z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -612,7 +613,7 @@ def test_yields_sn_m_interp_z_align(m_idx, z):
     ejecta_high = ejecta_table["SN"][z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -643,7 +644,7 @@ def test_yields_hn_m_interp_z_align(m_idx, z):
     ejecta_high = ejecta_table["HN"][z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -685,7 +686,7 @@ def test_yields_agb_m_interp_z_high(m_idx):
     ejecta_high = ejecta_table["AGB"][max_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -719,7 +720,7 @@ def test_yields_sn_m_interp_z_high(m_idx):
     ejecta_high = ejecta_table["SN"][max_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -753,7 +754,7 @@ def test_yields_hn_m_interp_z_high(m_idx):
     ejecta_high = ejecta_table["HN"][max_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -794,7 +795,7 @@ def test_yields_agb_m_interp_z_low(m_idx):
     ejecta_high = ejecta_table["AGB"][min_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -828,7 +829,7 @@ def test_yields_sn_m_interp_z_low(m_idx):
     ejecta_high = ejecta_table["SN"][min_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -862,7 +863,7 @@ def test_yields_hn_m_interp_z_low(m_idx):
     ejecta_high = ejecta_table["HN"][min_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -900,7 +901,7 @@ def test_yields_agb_m_low_z_align(z):
     ejecta_min = ejecta_table["AGB"][z][m_min]
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -925,7 +926,7 @@ def test_yields_sn_ii_m_low_z_align(z):
     ejecta_min = ejecta_table["SN"][z][m_min]
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -959,7 +960,7 @@ def test_yields_agb_m_high_z_align(z):
     ejecta_max = ejecta_table["AGB"][z][m_max]
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -984,7 +985,7 @@ def test_yields_sn_ii_m_high_z_align(z):
     ejecta_max = ejecta_table["SN"][z][m_max]
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -1009,7 +1010,7 @@ def test_yields_hn_ii_m_high_z_align(z):
     ejecta_max = ejecta_table["HN"][z][m_max]
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -1048,7 +1049,7 @@ def test_yields_agb_m_low_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["AGB"][z_high][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1085,7 +1086,7 @@ def test_yields_sn_ii_m_low_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["SN"][z_high][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1132,7 +1133,7 @@ def test_yields_agb_m_high_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["AGB"][z_high][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1169,7 +1170,7 @@ def test_yields_sn_ii_m_high_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["SN"][z_high][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1206,7 +1207,7 @@ def test_yields_hn_ii_m_high_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["HN"][z_high][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1248,7 +1249,7 @@ def test_yields_agb_m_low_z_high():
     ejecta_true = factor * ejecta_table["AGB"][max_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1276,7 +1277,7 @@ def test_yields_sn_ii_m_low_z_high():
     ejecta_true = factor * ejecta_table["SN"][max_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1314,7 +1315,7 @@ def test_yields_agb_m_low_z_low():
     ejecta_true = factor * ejecta_table["AGB"][min_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1342,7 +1343,7 @@ def test_yields_sn_ii_m_low_z_low():
     ejecta_true = factor * ejecta_table["SN"][min_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1380,7 +1381,7 @@ def test_yields_agb_m_high_z_low():
     ejecta_true = factor * ejecta_table["AGB"][min_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1408,7 +1409,7 @@ def test_yields_sn_ii_m_high_z_low():
     ejecta_true = factor * ejecta_table["SN"][min_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1437,7 +1438,7 @@ def test_yields_hn_ii_m_high_z_low():
     ejecta_true = factor * ejecta_table["HN"][min_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1472,7 +1473,7 @@ def test_yields_agb_m_high_z_high():
     ejecta_true = factor * ejecta_table["AGB"][max_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1500,7 +1501,7 @@ def test_yields_sn_ii_m_high_z_high():
     ejecta_true = factor * ejecta_table["SN"][max_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1529,7 +1530,7 @@ def test_yields_hn_ii_m_high_z_high():
     ejecta_true = factor * ejecta_table["HN"][max_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1558,7 +1559,7 @@ def test_yields_agb_m_outside(z, direction):
     points_checked["AGB"].append([m, z])
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(n_returned_agb):
@@ -1580,7 +1581,7 @@ def test_yields_sn_ii_m_outside(z, direction):
     points_checked["SN"].append([m, z])
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(n_returned_sn_ii):
@@ -1602,7 +1603,7 @@ def test_yields_hn_ii_m_outside(z, direction):
     points_checked["HN"].append([m, z])
 
     # and the values the code says for the mass of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(n_returned_hn_ii):
@@ -1641,7 +1642,7 @@ def test_yields_agb_m_interp_z_interp(m_idx, z_idx):
     ejecta_z_high_m_high = ejecta_table["AGB"][z_high][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_agb_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_z_low_m_low)):
@@ -1694,7 +1695,7 @@ def test_yields_sn_ii_m_interp_z_interp(m_idx, z_idx):
     ejecta_z_high_m_high = ejecta_table["SN"][z_high][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_z_low_m_low)):
@@ -1748,7 +1749,7 @@ def test_yields_hn_ii_m_interp_z_interp(m_idx, z_idx):
     ejecta_z_high_m_high = ejecta_table["HN"][z_high][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = tab.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_z_low_m_low)):
@@ -1792,14 +1793,14 @@ exact_yields_snia_solar = [0.0475001, 1.10546e-05, 0.0500047, 0.0048054,
 @pytest.mark.parametrize("z", [-0.5, 0, 1E-4, 0.0019999])
 def test_low_metallicity_sn_ia(z):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = tab.get_yields_sn_ia_py(z)
+    yields = core_elts.get_yields_sn_ia_py(z)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_01_solar[idx]
 
 @pytest.mark.parametrize("z", [0.020001, 0.05, 0.5, 1.5])
 def test_low_metallicity_sn_ia(z):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = tab.get_yields_sn_ia_py(z)
+    yields = core_elts.get_yields_sn_ia_py(z)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_solar[idx]
 
@@ -1810,13 +1811,13 @@ def test_low_metallicity_sn_ia(z):
 # ------------------------------------------------------------------------------
 def test_exact_low_metallicity_sn_ia():
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = tab.get_yields_sn_ia_py(0.002)
+    yields = core_elts.get_yields_sn_ia_py(0.002)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_01_solar[idx]
 
 def test_exact_high_metallicity_sn_ia():
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = tab.get_yields_sn_ia_py(0.02)
+    yields = core_elts.get_yields_sn_ia_py(0.02)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_solar[idx]
 
@@ -1825,20 +1826,17 @@ def test_exact_high_metallicity_sn_ia():
 # Test the range at which we interpolate
 #
 # ------------------------------------------------------------------------------
-@pytest.mark.parametrize("z, answers",
-                         [(0.006, [0.06243335555555555, 2.467453444444444e-06,
-                                   0.08850104444444444, 0.007821894444444444,
-                                   0.07786939999999999, 0.013202397777777777,
-                                   0.8859662222222222, 1.3812377777777776]),
-                          (0.01, [0.0581667111111111, 4.920923888888888e-06,
-                                  0.07750208888888888, 0.006960038888888888,
-                                  0.07900679999999999, 0.012201695555555555,
-                                  0.8898684444444444, 1.3784955555555554])])
-def test_interpolate_sn_ia(z, answers):
-    """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = tab.get_yields_sn_ia_py(z)
+@pytest.mark.parametrize("z", [0.006, 0.01])
+def test_interpolate_sn_ia(z):
+    """Interpolate the SNIa yields"""
+    yields = core_elts.get_yields_sn_ia_py(z)
     for idx in range(n_elements):
-        assert yields[idx] == pytest.approx(answers[idx], rel=r_tol, abs=a_tol)
+        interp = interpolate.interp1d(x=[0.002, 0.02],
+                                      y=[exact_yields_snia_01_solar[idx],
+                                         exact_yields_snia_solar[idx]],
+                                      kind="linear")
+
+        assert yields[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
 
 # ------------------------------------------------------------------------------
 #
@@ -1849,7 +1847,7 @@ def test_interpolate_sn_ia(z, answers):
                          [[2, 2, 2, 5, 5, 5],
                           [2, 1, 3, 4, 4, 4]])
 def test_interpolate_single_value(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = tab.interpolate_py(x, x_0, x_1, y_0, y_1)
+    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
@@ -1857,7 +1855,7 @@ def test_interpolate_single_value(x, x_0, x_1, y_0, y_1, answer):
                          [[2, 2, 4, 4, 6, 4],
                           [3, 1, 3, 0, 8, 8]])
 def test_interpolate_edge_cases(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = tab.interpolate_py(x, x_0, x_1, y_0, y_1)
+    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
@@ -1866,7 +1864,7 @@ def test_interpolate_edge_cases(x, x_0, x_1, y_0, y_1, answer):
                           [2, 0, 4, 4, 6, 5],
                           [7, 5, 11, 0, 3, 1]])
 def test_interpolate_simple_positive_slope(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = tab.interpolate_py(x, x_0, x_1, y_0, y_1)
+    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
@@ -1875,7 +1873,7 @@ def test_interpolate_simple_positive_slope(x, x_0, x_1, y_0, y_1, answer):
                           [2, 0, 4, 6, 4, 5],
                           [7, 5, 11, 3, 0, 2]])
 def test_interpolate_simple_negative_slope(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = tab.interpolate_py(x, x_0, x_1, y_0, y_1)
+    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
@@ -1917,4 +1915,4 @@ def plot_points():
 
         ax.add_labels("Stellar Mass [$M_\odot$]", "Metallicity")
 
-        fig.savefig("plots/grid_{}_checked.pdf".format(source))
+        fig.savefig("../plots/grid_{}_checked.pdf".format(source))
