@@ -1,4 +1,5 @@
 # this project specific
+*.c
 *.o
 art_enrich.*
 testing/plots/*
