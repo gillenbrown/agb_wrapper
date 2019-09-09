@@ -9,7 +9,6 @@ from snia_no_elements import lib as snia_no_elts
 from core_elts import lib as core_elts
 
 snia_elts.detailed_enrichment_init()
-snia_no_elts.detailed_enrichment_init()
 core_elts.detailed_enrichment_init()
 
 # tolerances for tests
@@ -68,8 +67,7 @@ idxs_elts = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6,
 idxs_no_elts = {"Z": 0, "E": 1, "N_SN_left": 2}
 
 # we want the possibility of having many timesteps to check against
-uniform_dts = np.logspace(0, 9, 19)
-
+uniform_dts = np.logspace(2, 6, 9)
 
 @pytest.mark.parametrize("dt", uniform_dts)
 @pytest.mark.parametrize("snia,idxs", ([snia_elts, idxs_elts],

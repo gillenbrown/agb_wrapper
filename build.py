@@ -10,8 +10,10 @@ dir = "/Users/gillenb/code/art_cluster/src/sf/models/"
 # included below anyway.
 
 # some other helpful things
-defines_regular = ["ENRICHMENT_ELEMENTS", "PY_TESTING"]
-defines_no_elts = ["PY_TESTING"]
+defines_discrete_elts = ["PY_TESTING", "ENRICHMENT_ELEMENTS", "DISCRETE_SN"]
+defines_continuous_elts = ["PY_TESTING", "ENRICHMENT_ELEMENTS"]
+defines_discrete_no_elts = ["PY_TESTING", "DISCRETE_SN"]
+defines_continuous_no_elts = ["PY_TESTING",]
 
 def build_extension(cdef, include_str, name, defines, sources):
     ffibuilder = FFI()
@@ -34,27 +36,67 @@ def build_extension(cdef, include_str, name, defines, sources):
 # SN Ia
 #
 # ==============================================================================
-# I'll test SNIa with and without my detailed enrichmen prescription
+# SNIa will be tested in all four configurations
 
-# The functions to include will be the same for both
-snia_cdef = """
+snia_elts_cdef = """
 void detailed_enrichment_init(void);  // from core file
 double *sn_ia_core_py(double, double, double, double, double, double);
 double get_sn_ia_rate_py(double, double);"""
-# as will the include
+snia_no_elts_cdef = """
+double *sn_ia_core_py(double, double, double, double, double, double);
+double get_sn_ia_rate_py(double, double);"""
+# the include will be the same for both
 snia_include_str = '''
 #include <math.h> 
 #include "{0}feedback.detailed_enrich.h" 
-#include "{0}feedback.snIa-discrete.h"
+#include "{0}feedback.snIa-detailed.h"
 '''.format(dir)
 # and the needed sources
-sources = [dir + "feedback.detailed_enrich.c", dir + "feedback.snIa-discrete.c"]
+sources = [dir + "feedback.detailed_enrich.c", dir + "feedback.snIa-detailed.c"]
 
 # then we can build things!
-build_extension(snia_cdef, snia_include_str, "snia_elements",
-                defines_regular, sources)
-build_extension(snia_cdef, snia_include_str, "snia_no_elements",
-                defines_no_elts, sources)
+build_extension(snia_elts_cdef, snia_include_str, "snia_discrete_elements",
+                defines_discrete_elts, sources)
+build_extension(snia_no_elts_cdef, snia_include_str, "snia_discrete_no_elements",
+                defines_discrete_no_elts, sources)
+build_extension(snia_elts_cdef, snia_include_str, "snia_continuous_elements",
+                defines_continuous_elts, sources)
+build_extension(snia_no_elts_cdef, snia_include_str, "snia_continuous_no_elements",
+                defines_continuous_no_elts, sources)
+
+# ==============================================================================
+#
+# SN II
+#
+# ==============================================================================
+# I'll test SNII with and without my detailed enrichmen prescription
+
+# The functions to include will be the same for both
+snii_elts_cdef = """
+void detailed_enrichment_init(void);  // from core file
+double *get_ejecta_sn_ii_py(double, double, double, double, double);
+"""
+snii_no_elts_cdef = """
+void detailed_enrichment_init(void);  // from core file
+double *get_ejecta_sn_ii_py(double, double, double, double, double);
+"""
+# the include will be the same for both
+snii_include_str = '''
+#include "{0}feedback.detailed_enrich.h" 
+#include "{0}feedback.snII-detailed.h"
+'''.format(dir)
+# and the needed sources
+sources = [dir + "feedback.detailed_enrich.c", dir + "feedback.snII-detailed.c"]
+
+# then we can build things!
+build_extension(snii_elts_cdef, snii_include_str, "snii_discrete_elements",
+                defines_discrete_elts, sources)
+build_extension(snii_no_elts_cdef, snii_include_str, "snii_discrete_no_elements",
+                defines_discrete_no_elts, sources)
+build_extension(snii_elts_cdef, snii_include_str, "snii_continuous_elements",
+                defines_continuous_elts, sources)
+build_extension(snii_no_elts_cdef, snii_include_str, "snii_continuous_no_elements",
+                defines_continuous_no_elts, sources)
 
 # ==============================================================================
 #
@@ -81,7 +123,6 @@ double get_z_winds(int);
 double get_z_agb(int);
 double get_z_sn_ii(int);
 double get_z_sn_ia(int);
-double *get_ejecta_sn_ii_py(double, double, double, double, double);
 double *get_ejecta_agb_py(double, double, double, double, double, double, double);
 double *get_yields_raw_sn_ii_py(double, double);
 double *get_yields_raw_hn_ii_py(double, double);
@@ -93,8 +134,9 @@ double extrapolate_py(double, double, double);"""
 
 core_include_str = '#include "{}feedback.detailed_enrich.h"'.format(dir)
 
+# The discrete flag has no effect here, so we only need two compilations
 build_extension(core_cdef, core_include_str, "core_elts",
-                defines_regular, [dir + "feedback.detailed_enrich.c"])
-# build_extension(core_cdef, core_include_str, "core_no_elts",
-#                 defines_no_elts, [dir + "feedback.detailed_enrich.c"])
+                defines_discrete_elts, [dir + "feedback.detailed_enrich.c"])
+build_extension(core_cdef, core_include_str, "core_no_elts",
+                defines_discrete_no_elts, [dir + "feedback.detailed_enrich.c"])
 
