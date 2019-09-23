@@ -100,7 +100,37 @@ build_extension(snii_no_elts_cdef, snii_include_str, "snii_continuous_no_element
 
 # ==============================================================================
 #
-# Background detailed_enrichm machinery
+# SN II
+#
+# ==============================================================================
+# I'll test AGB with and without my detailed enrichment prescription
+
+# The functions to include will be the same for both
+agb_elts_cdef = """
+void detailed_enrichment_init(void);  // from core file
+double *get_ejecta_sn_ii_py(double, double, double, double, double);
+"""
+agb_no_elts_cdef = """
+void detailed_enrichment_init(void);  // from core file
+double *get_ejecta_sn_ii_py(double, double, double, double, double);
+"""
+# the include will be the same for both
+agb_include_str = '''
+#include "{0}feedback.detailed_enrich.h" 
+#include "{0}feedback.AGB-detailed.h"
+'''.format(dir)
+# and the needed sources
+sources = [dir + "feedback.detailed_enrich.c", dir + "feedback.AGB-detailed.c"]
+
+# then we can build things!
+build_extension(agb_elts_cdef, agb_include_str, "agb_elements",
+                defines_discrete_elts, sources)
+build_extension(agb_no_elts_cdef, agb_include_str, "agb_no_elements",
+                defines_discrete_no_elts, sources)
+
+# ==============================================================================
+#
+# Background detailed_enrichment machinery
 #
 # ==============================================================================
 core_cdef = """

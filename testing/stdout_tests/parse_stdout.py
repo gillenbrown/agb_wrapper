@@ -3,38 +3,65 @@ from collections import defaultdict
 
 
 class star_ejecta(object):
-    end_ms_values = 85  # SNII and AGB, since they're together in ART
-    snia_values = 42
+    snii_values = 54
+    snia_values = 2
+    wind_values = 2
+    agb_values = 2
 
     def __init__(self, id, time):
         self.id = id
         self.snia = {"time": time}
-        self.detail = {"time": time}
+        self.snii = {"time": time}
+        self.wind = {"time": time}
+        self.agb =  {"time": time}
+
+        self.complete_wind = False
+        self.complete_snii = False
+        self.complete_snia = False
+        self.complete_agb  = False
 
     def is_complete(self):
-        return (len(self.snia)  == self.snia_values and
-                len(self.detail)  == self.end_ms_values)
+        if len(self.snia)  == self.snia_values:
+            self.complete_snia = True
+        if len(self.snii)  == self.snii_values:
+            self.complete_snii = True
+        if len(self.wind) == self.wind_values:
+            self.complete_wind = True
+        if len(self.agb) == self.agb_values:
+            self.complete_agb = True
 
     def set_value(self, source, parameter, value):
         if source == "SNIa":
             parameter_dict = self.snia
-        elif source == "detailed_enrich":
-            parameter_dict = self.detail
+        elif source == "SNII":
+            parameter_dict = self.snii
+        elif source == "Wind":
+            parameter_dict = self.wind
+        elif source == "AGB":
+            parameter_dict = self.agb
         else:
             raise ValueError("Source {} not recognized.".format(source))
 
         parameter_dict[parameter] = float(value)
 
+        self.is_complete()
 
-def parse_file(number):
+
+def parse_file(max_number):
     """
 
     :return:
     """
 
-    complete_stars = []
+    complete_stars_snii_inactive = []
+    complete_stars_snii_active = []
+    complete_stars_snia_inactive = []
+    complete_stars_snia_active = []
+    complete_stars_wind = []
+    complete_stars_agb = []
+
     timesteps = defaultdict(dict)
-    with open("./stdout", "r") as stdout:
+    with open("./snii_stdout.txt", "r") as stdout:
         for idx, line in enumerate(stdout):
             # if idx > 2000:
             #     continue
@@ -51,25 +78,60 @@ def parse_file(number):
             if time in timesteps[id]:
                 star = timesteps[id][time]
                 star.set_value(source, parameter, value)
-                if star.is_complete():
-                    complete_stars.append(star)
-                    if len(complete_stars) == number:
-                        return complete_stars
 
-            else:
+                # check if this completes the info for that star
+                if star.complete_snia and \
+                        len(complete_stars_snia_inactive) < max_number and \
+                        star.snia["energy added"] == 0:
+                    complete_stars_snia_inactive.append(star)
+                if star.complete_snia and \
+                        len(complete_stars_snia_active) < max_number and \
+                        star.snia["energy added"] > 0:
+                    complete_stars_snia_active.append(star)
+                if star.complete_snii and \
+                        len(complete_stars_snii_inactive) < max_number and \
+                        star.snii["energy added"] == 0:
+                    complete_stars_snii_inactive.append(star)
+                if star.complete_snii and \
+                        len(complete_stars_snii_active) < max_number and \
+                        star.snii["energy added"] > 0:
+                    complete_stars_snii_active.append(star)
+
+
+                if star.complete_wind and len(complete_stars_wind) < max_number:
+                    complete_stars_wind.append(star)
+                if star.complete_agb  and len(complete_stars_agb)  < max_number:
+                    complete_stars_agb.append(star)
+
+                # check if we've obtained enough for the user
+                if len(complete_stars_snia_inactive) == max_number and \
+                   len(complete_stars_snia_active) == max_number and \
+                   len(complete_stars_snii_inactive) == max_number and \
+                   len(complete_stars_snii_active) == max_number and \
+                   len(complete_stars_wind) == max_number and \
+                   len(complete_stars_agb)  == max_number:
+
+                    return complete_stars_wind, \
+                           complete_stars_snii_inactive, \
+                           complete_stars_snii_active, \
+                           complete_stars_snia_inactive, \
+                           complete_stars_snia_active, \
+                           complete_stars_agb
+
+            else:  # adding a new timestep
                 star = star_ejecta(id, float(time))
                 timesteps[id][time] = star
                 star.set_value(source, parameter, value)
 
-    # throw away sources that don't have all their information
-    good_points = []
-    for id in timesteps:
-        for time in timesteps[id]:
-            star = timesteps[id][time]
-            if star.is_complete():
-                good_points.append(star)
-
-    return good_points
+    # we might have returned earlier in the function if we had enough of all
+    # sources. If we got here we didn't have enough, so we'll just return
+    # what we have
+    return complete_stars_wind, \
+           complete_stars_snii_inactive, \
+           complete_stars_snii_active, \
+           complete_stars_snia_inactive, \
+           complete_stars_snia_active, \
+           complete_stars_agb
 
 if __name__ == "__main__":
-    parse_file()
+    parse_file(1E10)

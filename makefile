@@ -3,7 +3,8 @@ source_dir = /Users/gillenb/code/art_cluster/src/sf/models/
 
 file_names = feedback.detailed_enrich \
              feedback.snIa-detailed \
-             feedback.snII-detailed
+             feedback.snII-detailed \
+             feedback.AGB-detailed
 source_files_c = $(foreach item,$(file_names),$(source_dir)$(item).c)
 source_files_h = $(foreach item,$(file_names),$(source_dir)$(item).h)
 source_files = $(source_files_c) $(source_files_h)
@@ -17,7 +18,9 @@ output_names = snia_discrete_elements \
                snii_discrete_elements \
                snii_discrete_no_elements \
                snii_continuous_elements \
-               snii_continuous_no_elements
+               snii_continuous_no_elements \
+               agb_elements \
+               agb_no_elements
 
 targets = $(foreach item,$(output_names),$(item).so)
 

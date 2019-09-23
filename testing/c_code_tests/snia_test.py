@@ -4,8 +4,8 @@ import numpy as np
 from scipy import integrate
 
 import tabulation
-from snia_elements import lib as snia_elts
-from snia_no_elements import lib as snia_no_elts
+from snia_discrete_elements import lib as snia_elts
+from snia_discrete_no_elements import lib as snia_no_elts
 from core_elts import lib as core_elts
 
 snia_elts.detailed_enrichment_init()
