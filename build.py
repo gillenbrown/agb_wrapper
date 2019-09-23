@@ -100,7 +100,7 @@ build_extension(snii_no_elts_cdef, snii_include_str, "snii_continuous_no_element
 
 # ==============================================================================
 #
-# SN II
+# AGB
 #
 # ==============================================================================
 # I'll test AGB with and without my detailed enrichment prescription
@@ -108,11 +108,11 @@ build_extension(snii_no_elts_cdef, snii_include_str, "snii_continuous_no_element
 # The functions to include will be the same for both
 agb_elts_cdef = """
 void detailed_enrichment_init(void);  // from core file
-double *get_ejecta_sn_ii_py(double, double, double, double, double);
+double *get_ejecta_agb_py(double, double, double, double, double, double, double);
 """
 agb_no_elts_cdef = """
 void detailed_enrichment_init(void);  // from core file
-double *get_ejecta_sn_ii_py(double, double, double, double, double);
+double *get_ejecta_agb_py(double, double, double, double, double, double, double);
 """
 # the include will be the same for both
 agb_include_str = '''
@@ -153,7 +153,6 @@ double get_z_winds(int);
 double get_z_agb(int);
 double get_z_sn_ii(int);
 double get_z_sn_ia(int);
-double *get_ejecta_agb_py(double, double, double, double, double, double, double);
 double *get_yields_raw_sn_ii_py(double, double);
 double *get_yields_raw_hn_ii_py(double, double);
 double *get_yields_raw_agb_py(double, double);
