@@ -1,6 +1,5 @@
 import sys, os
 sys.path.append(os.path.abspath("../"))
-import itertools
 
 import pytest
 import numpy as np
@@ -8,6 +7,8 @@ from scipy import interpolate
 
 import betterplotlib as bpl
 bpl.presentation_style()
+
+import tabulation
 
 from core_elts import lib as core_elts
 # from core_no_elts import lib as core_no_elts
@@ -31,17 +32,23 @@ n_returned_agb = 6
 n_returned_sn_ii = 9
 n_returned_hn_ii = 9
 
+lifetimes = tabulation.Lifetimes("Raiteri_96")
+def lt(m, z):
+    return lifetimes.lifetime(m, z)
+
 ejecta_table = dict()
 
 # Just read the table, it will make things easier than copying many values
 # by hand
-for source in ["AGB", "SN", "HN"]:
+for source in ["AGB", "SN", "HN", "winds"]:
     if source == "AGB":
         file_loc = "/Users/gillenb/code/art_cluster/src/sf/models/detail_enrich_agb_ejecta.txt"
     elif source == "SN":
         file_loc = "/Users/gillenb/code/art_cluster/src/sf/models/detail_enrich_sn_ii_ejecta.txt"
     elif source == "HN":
         file_loc = "/Users/gillenb/code/art_cluster/src/sf/models/detail_enrich_hn_ii_ejecta.txt"
+    elif source == "winds":
+        file_loc = "/Users/gillenb/code/art_cluster/src/sf/models/detail_enrich_wind_ejecta.txt"
     else:
         raise ValueError("Wrong name!")
 
@@ -56,6 +63,8 @@ for source in ["AGB", "SN", "HN"]:
             m = split_line[0]
             z = split_line[1]
             ejecta = split_line[2:]
+            if len(ejecta) == 1:
+                ejecta = ejecta[0]
 
             if z not in ejecta_table[source]:
                 ejecta_table[source][z] = dict()
@@ -86,21 +95,33 @@ def test_ejecta_table():
     assert ejecta_table["HN"][0.02][30] == pytest.approx([0.18092, 0.102015, 2.74447, 0.2135, 0.123579, 0.00955079, 0.11391, 4.41294, 21.53])
     assert ejecta_table["HN"][0.02][40] == pytest.approx([0.490431, 0.0581426, 7.06137, 0.4466, 0.158714, 0.014751, 0.29315, 10.842, 19.17])
 
+    assert ejecta_table["winds"][0][50.0] == pytest.approx(0)
+    assert ejecta_table["winds"][0.001][50.0] == pytest.approx(0.00225708032)
+    assert ejecta_table["winds"][0.004][50.0] == pytest.approx(0.006820460176)
+    assert ejecta_table["winds"][0.02][50.0] == pytest.approx(0.01684394046)
+    assert ejecta_table["winds"][0.001][9.6815381955] == pytest.approx(0.003361735716)
+    assert ejecta_table["winds"][0.004][13.9215101572] == pytest.approx(0.01002193139)
+    assert ejecta_table["winds"][0.02][47.6712357817] == pytest.approx(0.01728620496)
+
 
 zs_agb   = sorted(list(ejecta_table["AGB"].keys()))
 zs_sn_ii = sorted(list(ejecta_table["SN"].keys()))
 zs_hn_ii = sorted(list(ejecta_table["HN"].keys()))
+zs_winds = sorted(list(ejecta_table["winds"].keys()))
 ms_agb   = sorted(list(ejecta_table["AGB"][zs_agb[0]].keys()))
 ms_sn_ii = sorted(list(ejecta_table["SN"][zs_sn_ii[0]].keys()))
 ms_hn_ii = sorted(list(ejecta_table["HN"][zs_hn_ii[0]].keys()))
+# winds has a ton of points, so we'll only take a segment of them. I'll split
+# them into the low and high mass end, then test them separately
+ms_winds_lo = sorted(list(ejecta_table["winds"][zs_winds[0]].keys()))[:10]
+ms_winds_hi = sorted(list(ejecta_table["winds"][zs_winds[0]].keys()))[-10:]
 
-zs_winds = zs_sn_ii
 zs_snia = [0.002, 0.02]
 
 # I want to keep a log of the points checked, so that I can verify that I'm
 # checking everything I should be
-points_checked = {"AGB": [], "SN": [], "HN": []}
-points_passed  = {"AGB": [], "SN": [], "HN": []}
+points_checked = {"AGB": [], "SN": [], "HN": [], "winds_lo": [], "winds_hi": []}
+points_passed  = {"AGB": [], "SN": [], "HN": [], "winds_lo": [], "winds_hi": []}
 
 def make_inbetween_values(values, min_allowed_value, max_allowed_value):
     return_values = []
@@ -306,6 +327,31 @@ def test_yields_hn_ii_m_align_z_align(z, m):
         assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
     points_passed["HN"].append([m, z])
 
+@pytest.mark.parametrize("z", zs_winds)
+@pytest.mark.parametrize("m", ms_winds_lo)
+def test_yields_winds_lo_m_align_z_align(z, m):
+    points_checked["winds_lo"].append([m, z])
+    true_ejecta = ejecta_table["winds"][z][m]
+
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    assert code_ejecta == pytest.approx(true_ejecta, rel=r_tol, abs=a_tol)
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("z", zs_winds)
+@pytest.mark.parametrize("m", ms_winds_hi)
+def test_yields_winds_hi_m_align_z_align(z, m):
+    points_checked["winds_hi"].append([m, z])
+    true_ejecta = ejecta_table["winds"][z][m]
+
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    assert code_ejecta == pytest.approx(true_ejecta, rel=r_tol, abs=a_tol)
+    points_passed["winds_hi"].append([m, z])
+
 
 # ------------------------------------------------------------------------------
 #
@@ -408,6 +454,69 @@ def test_yields_hn_ii_m_align_z_interp(z_idx, m):
         assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
     points_passed["HN"].append([m, z])
 
+
+@pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
+@pytest.mark.parametrize("m", ms_winds_lo)
+def test_yields_winds_lo_m_align_z_interp(z_idx, m):
+    # get a random value between two endpoints on the table
+    z_low = zs_winds[z_idx]
+    z_high = zs_winds[z_idx + 1]
+    z = np.random.uniform(z_low, z_high, 1)
+    assert z_low < z < z_high
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][z_low][m]
+    ejecta_high = ejecta_table["winds"][z_high][m]
+
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[z_low, z_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
+@pytest.mark.parametrize("m", ms_winds_hi)
+def test_yields_winds_hi_m_align_z_interp(z_idx, m):
+    # get a random value between two endpoints on the table
+    z_low = zs_winds[z_idx]
+    z_high = zs_winds[z_idx + 1]
+    z = np.random.uniform(z_low, z_high, 1)
+    assert z_low < z < z_high
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][z_low][m]
+    ejecta_high = ejecta_table["winds"][z_high][m]
+
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[z_low, z_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
+
 # ------------------------------------------------------------------------------
 #
 # Metallicity that's too high error checking
@@ -483,6 +592,52 @@ def test_yields_hn_ii_m_align_z_high(m):
 
     points_passed["HN"].append([m, z])
 
+
+@pytest.mark.parametrize("m", ms_winds_lo)
+def test_yields_winds_lo_m_align_z_high(m):
+    z_max = max(zs_winds)
+    # get a random value between two endpoints on the table
+    z = np.random.uniform(z_max, 0.025, 1)
+    assert z_max < z
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_max = ejecta_table["winds"][z_max][m]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's equal to this value
+    assert code_ejecta == pytest.approx(ejecta_max, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("m", ms_winds_hi)
+def test_yields_winds_hi_m_align_z_high(m):
+    z_max = max(zs_winds)
+    # get a random value between two endpoints on the table
+    z = np.random.uniform(z_max, 0.025, 1)
+    assert z_max < z
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_max = ejecta_table["winds"][z_max][m]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's equal to this value
+    assert code_ejecta == pytest.approx(ejecta_max, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
 # ------------------------------------------------------------------------------
 #
 # Metallicity that's too low error checking
@@ -557,6 +712,53 @@ def test_yields_hn_ii_m_align_z_low(m):
         assert code_ejecta[idx] == pytest.approx(ejecta_min[idx], rel=r_tol, abs=a_tol)
 
     points_passed["HN"].append([m, z])
+
+
+@pytest.mark.parametrize("m", ms_winds_lo)
+def test_yields_winds_lo_m_align_z_low(m):
+    z_min = min(zs_winds)
+    # get a random value between two endpoints on the table
+    z = np.random.uniform(-0.005, z_min, 1)
+    assert z < z_min
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_min = ejecta_table["winds"][z_min][m]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's equal to this value
+    assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("m", ms_winds_hi)
+def test_yields_winds_hi_m_align_z_low(m):
+    z_min = min(zs_winds)
+    # get a random value between two endpoints on the table
+    z = np.random.uniform(-0.005, z_min, 1)
+    assert z < z_min
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_min = ejecta_table["winds"][z_min][m]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's equal to this value
+    assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
 
 # ------------------------------------------------------------------------------
 #
@@ -658,6 +860,70 @@ def test_yields_hn_m_interp_z_align(m_idx, z):
         assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
 
     points_passed["HN"].append([m, z])
+
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
+@pytest.mark.parametrize("z", zs_winds)
+def test_yields_winds_lo_m_interp_z_align(m_idx, z):
+    # get a random value between two endpoints on the table
+    m_low = ms_winds_lo[m_idx]
+    m_high = ms_winds_lo[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][z][m_low]
+    ejecta_high = ejecta_table["winds"][z][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[m_low, m_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
+@pytest.mark.parametrize("z", zs_winds)
+def test_yields_winds_hi_m_interp_z_align(m_idx, z):
+    # get a random value between two endpoints on the table
+    m_low = ms_winds_hi[m_idx]
+    m_high = ms_winds_hi[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][z][m_low]
+    ejecta_high = ejecta_table["winds"][z][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[m_low, m_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
 
 
 # ------------------------------------------------------------------------------
@@ -769,6 +1035,76 @@ def test_yields_hn_m_interp_z_high(m_idx):
 
     points_passed["HN"].append([m, z])
 
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
+def test_yields_winds_lo_m_interp_z_high(m_idx):
+    # get a random value between two endpoints on the table
+    m_low = ms_winds_lo[m_idx]
+    m_high = ms_winds_lo[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    # Then get a metallicity above the maximum value
+    max_z = max(zs_winds)
+    z = np.random.uniform(max_z, 0.025, 1)
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][max_z][m_low]
+    ejecta_high = ejecta_table["winds"][max_z][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[m_low, m_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
+def test_yields_winds_hi_m_interp_z_high(m_idx):
+    # get a random value between two endpoints on the table
+    m_low = ms_winds_hi[m_idx]
+    m_high = ms_winds_hi[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    # Then get a metallicity above the maximum value
+    max_z = max(zs_winds)
+    z = np.random.uniform(max_z, 0.025, 1)
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][max_z][m_low]
+    ejecta_high = ejecta_table["winds"][max_z][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[m_low, m_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
 # ------------------------------------------------------------------------------
 #
 # Mass interpolation, metallicity low yield checking
@@ -878,6 +1214,76 @@ def test_yields_hn_m_interp_z_low(m_idx):
 
     points_passed["HN"].append([m, z])
 
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
+def test_yields_winds_lo_m_interp_z_low(m_idx):
+    # get a random value between two endpoints on the table
+    m_low = ms_winds_lo[m_idx]
+    m_high = ms_winds_lo[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    # Then get a metallicity below the minimum value
+    min_z = min(zs_winds)
+    z = np.random.uniform(-0.005, min_z, 1)
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][min_z][m_low]
+    ejecta_high = ejecta_table["winds"][min_z][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[m_low, m_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
+def test_yields_winds_hi_m_interp_z_low(m_idx):
+    # get a random value between two endpoints on the table
+    m_low = ms_winds_hi[m_idx]
+    m_high = ms_winds_hi[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    # Then get a metallicity below the minimum value
+    min_z = min(zs_winds)
+    z = np.random.uniform(-0.005, min_z, 1)
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][min_z][m_low]
+    ejecta_high = ejecta_table["winds"][min_z][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[m_low, m_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
 # ------------------------------------------------------------------------------
 #
 # Mass below models yield checking
@@ -936,6 +1342,29 @@ def test_yields_sn_ii_m_low_z_align(z):
     points_passed["SN"].append([m, z])
 
 # HN don't need this test, since their cutoff is their minimum mass
+
+@pytest.mark.parametrize("z", zs_winds)
+def test_yields_winds_m_low_z_align(z):
+    m_min = min(ms_winds_lo)
+    # get a random value below the minimum. Here we expect all the ejecta to be
+    # the same as the minimum mass model
+    m = np.random.uniform(7.99, m_min, 1)
+    assert m < m_min
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_min = ejecta_table["winds"][z][m_min]
+
+    # and the values the code says for the mass of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # The yield should be the same as the minimum mass model
+    assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
 
 # ------------------------------------------------------------------------------
 #
@@ -1018,6 +1447,29 @@ def test_yields_hn_ii_m_high_z_align(z):
         assert code_ejecta[idx] == pytest.approx(factor * ejecta_max[idx], rel=r_tol, abs=a_tol)
 
     points_passed["HN"].append([m, z])
+
+
+@pytest.mark.parametrize("z", zs_winds)
+def test_yields_winds_hi_m_high_z_align(z):
+    m_max = max(ms_winds_hi)
+    # get a random value above the maximum
+    m = np.random.uniform(m_max, 50.05, 1)
+    assert m_max < m
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_max = ejecta_table["winds"][z][m_max]
+
+    # and the values the code says for the mass of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # the yield will be scaled by the fraction of age that has passes
+    assert code_ejecta == pytest.approx(ejecta_max * age / age_50, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
 
 # ------------------------------------------------------------------------------
 #
@@ -1102,6 +1554,42 @@ def test_yields_sn_ii_m_low_z_interp(z_idx):
 
 # Hypernovae don't need this test, since their cutoff mass is the mass of their
 # smallest model
+
+@pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
+def test_yields_winds_lo_m_low_z_interp(z_idx):
+    # get a random value between two endpoints on the table
+    z_low = zs_winds[z_idx]
+    z_high = zs_winds[z_idx + 1]
+    z = np.random.uniform(z_low, z_high, 1)
+    assert z_low < z < z_high
+
+    m_min = min(ms_winds_lo)
+    # get a random value below the minimum
+    m = np.random.uniform(7.99, m_min, 1)
+    assert m < m_min
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][z_low][m_min]
+    ejecta_high = ejecta_table["winds"][z_high][m_min]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # The true value should match the value of the interpolated endpoint, since
+    # there are no wind after the last mass
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low, ejecta_high)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[z_low, z_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+    points_passed["winds_lo"].append([m, z])
 
 # ------------------------------------------------------------------------------
 #
@@ -1222,6 +1710,42 @@ def test_yields_hn_ii_m_high_z_interp(z_idx):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
+def test_yields_winds_hi_m_high_z_interp(z_idx):
+    # get a random value between two endpoints on the table
+    z_low = zs_winds[z_idx]
+    z_high = zs_winds[z_idx + 1]
+    z = np.random.uniform(z_low, z_high, 1)
+    assert z_low < z < z_high
+
+    m_max = max(ms_winds_hi)
+    # get a random value above the maximum
+    m = np.random.uniform(m_max, 50.05, 1)
+    assert m > m_max
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_low = ejecta_table["winds"][z_low][m_max]
+    ejecta_high = ejecta_table["winds"][z_high][m_max]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # the yield will be scaled by the fraction of age that has passes
+    # first do sanity check that it's between the two endpoints
+    assert is_between(code_ejecta, ejecta_low * age / age_50, ejecta_high * age / age_50)
+
+    # then do the actual interpolation
+    interp = interpolate.interp1d(x=[z_low, z_high],
+                                  y=[ejecta_low, ejecta_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(z) * age / age_50, rel=r_tol, abs=a_tol)
+    points_passed["winds_hi"].append([m, z])
+
+
 # ------------------------------------------------------------------------------
 #
 # Mass below models, z too high yield checking
@@ -1288,6 +1812,33 @@ def test_yields_sn_ii_m_low_z_high():
 # Hypernovae don't need this test, since their cutoff mass is the mass of their
 # smallest model
 
+def test_yields_winds_lo_m_low_z_high():
+    # Then get a metallicity above the maximum value
+    max_z = max(zs_winds)
+    z = np.random.uniform(max_z, 0.025, 1)
+    assert z > 0.02
+
+    m_min = min(ms_winds_lo)
+    # get a random value below the minimum
+    m = np.random.uniform(7.99, m_min, 1)
+    assert m < m_min
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_true = ejecta_table["winds"][max_z][m_min]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # At late times there are no more ejecta, since winds have stopped, so this
+    # should match the endpoint
+    assert code_ejecta == pytest.approx(ejecta_true, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
 # ------------------------------------------------------------------------------
 #
 # Mass below models, z too low yield checking
@@ -1353,6 +1904,34 @@ def test_yields_sn_ii_m_low_z_low():
 
 # Hypernovae don't need this test, since their cutoff mass is the mass of their
 # smallest model
+
+
+def test_yields_winds_lo_m_low_z_low():
+    # Then get a metallicity above the maximum value
+    min_z = min(zs_winds)
+    z = np.random.uniform(-0.005, min_z, 1)
+    assert z < min_z
+
+    m_min = min(ms_winds_lo)
+    # get a random value below the minimum
+    m = np.random.uniform(7.99, m_min, 1)
+    assert m < m_min
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_true = ejecta_table["winds"][min_z][m_min]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # At late times there are no more ejecta, since winds have stopped, so this
+    # should match the endpoint
+    assert code_ejecta == pytest.approx(ejecta_true, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
 
 # ------------------------------------------------------------------------------
 #
@@ -1446,6 +2025,33 @@ def test_yields_hn_ii_m_high_z_low():
 
     points_passed["HN"].append([m, z])
 
+
+def test_yields_winds_hi_m_high_z_low():
+    # Then get a metallicity below the minimum value
+    min_z = min(zs_winds)
+    z = np.random.uniform(-0.005, min_z, 1)
+    assert z < min_z
+
+    m_max = max(ms_winds_hi)
+    # get a random value above the maximum
+    m = np.random.uniform(m_max, 50.1, 1)
+    assert m > m_max
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_true = ejecta_table["winds"][min_z][m_max]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # The ejecta is scaled by the amount of time that's passes
+    assert code_ejecta == pytest.approx(ejecta_true * age / age_50, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
 # ------------------------------------------------------------------------------
 #
 # Mass above models, z too high yield checking
@@ -1538,6 +2144,33 @@ def test_yields_hn_ii_m_high_z_high():
 
     points_passed["HN"].append([m, z])
 
+
+def test_yields_winds_hi_m_high_z_high():
+    # Then get a metallicity above the maximum value
+    max_z = max(zs_winds)
+    z = np.random.uniform(max_z, 0.025, 1)
+    assert z > max_z
+
+    m_max = max(ms_winds_hi)
+    # get a random value above the maximum
+    m = np.random.uniform(m_max, 50.1, 1)
+    assert m > m_max
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_true = ejecta_table["winds"][max_z][m_max]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # The ejecta is scaled by the amount of time that's passes
+    assert code_ejecta == pytest.approx(ejecta_true * age / age_50, rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
 # ------------------------------------------------------------------------------
 #
 # Mass outside models yield checking
@@ -1611,6 +2244,9 @@ def test_yields_hn_ii_m_outside(z, direction):
         assert code_ejecta[idx] == 0
 
     points_passed["HN"].append([m, z])
+
+# This doesn't apply to winds, since there is no range where they are active but
+# there is no entry in the table
 
 # ------------------------------------------------------------------------------
 #
@@ -1778,6 +2414,112 @@ def test_yields_hn_ii_m_interp_z_interp(m_idx, z_idx):
 
     points_passed["HN"].append([m, z])
 
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
+@pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
+def test_yields_winds_lo_m_interp_z_interp(m_idx, z_idx):
+    # get a random value between two endpoints in mass
+    m_low = ms_winds_lo[m_idx]
+    m_high = ms_winds_lo[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    # and in metallicity
+    z_low = zs_winds[z_idx]
+    z_high = zs_winds[z_idx + 1]
+    z = np.random.uniform(z_low, z_high, 1)
+    assert z_low < z < z_high
+
+    points_checked["winds_lo"].append([m, z])
+
+    # get the ejecta at the four corners
+    ejecta_z_low_m_low   = ejecta_table["winds"][z_low][m_low]
+    ejecta_z_low_m_high  = ejecta_table["winds"][z_low][m_high]
+    ejecta_z_high_m_low  = ejecta_table["winds"][z_high][m_low]
+    ejecta_z_high_m_high = ejecta_table["winds"][z_high][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # do the interpolation in mass first
+    interp_z_low = interpolate.interp1d(x=[m_low, m_high],
+                                        y=[ejecta_z_low_m_low,
+                                           ejecta_z_low_m_high],
+                                        kind="linear")
+    interp_z_high = interpolate.interp1d(x=[m_low, m_high],
+                                         y=[ejecta_z_high_m_low,
+                                            ejecta_z_high_m_high],
+                                         kind="linear")
+
+    ejecta_z_low = interp_z_low(m)[0]
+    ejecta_z_high = interp_z_high(m)[0]
+
+    # quick sanity check that the ejecta is in this range
+    assert is_between(code_ejecta, ejecta_z_low, ejecta_z_high)
+
+    # then do the final interpolation in metallicity
+    interp = interpolate.interp1d(x=[z_low, z_high],
+                                  y=[ejecta_z_low, ejecta_z_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_lo"].append([m, z])
+
+
+@pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
+@pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
+def test_yields_winds_hi_m_interp_z_interp(m_idx, z_idx):
+    # get a random value between two endpoints in mass
+    m_low = ms_winds_hi[m_idx]
+    m_high = ms_winds_hi[m_idx + 1]
+    m = np.random.uniform(m_low, m_high, 1)
+    assert m_low < m < m_high
+
+    # and in metallicity
+    z_low = zs_winds[z_idx]
+    z_high = zs_winds[z_idx + 1]
+    z = np.random.uniform(z_low, z_high, 1)
+    assert z_low < z < z_high
+
+    points_checked["winds_hi"].append([m, z])
+
+    # get the ejecta at the four corners
+    ejecta_z_low_m_low   = ejecta_table["winds"][z_low][m_low]
+    ejecta_z_low_m_high  = ejecta_table["winds"][z_low][m_high]
+    ejecta_z_high_m_low  = ejecta_table["winds"][z_high][m_low]
+    ejecta_z_high_m_high = ejecta_table["winds"][z_high][m_high]
+
+    # and the values the code says for the metallicity of interest
+    age = lt(m, z)
+    age_50 = lt(50.0, z)
+    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+
+    # do the interpolation in mass first
+    interp_z_low = interpolate.interp1d(x=[m_low, m_high],
+                                        y=[ejecta_z_low_m_low,
+                                           ejecta_z_low_m_high],
+                                        kind="linear")
+    interp_z_high = interpolate.interp1d(x=[m_low, m_high],
+                                         y=[ejecta_z_high_m_low,
+                                            ejecta_z_high_m_high],
+                                         kind="linear")
+
+    ejecta_z_low = interp_z_low(m)[0]
+    ejecta_z_high = interp_z_high(m)[0]
+
+    # quick sanity check that the ejecta is in this range
+    assert is_between(code_ejecta, ejecta_z_low, ejecta_z_high)
+
+    # then do the final interpolation in metallicity
+    interp = interpolate.interp1d(x=[z_low, z_high],
+                                  y=[ejecta_z_low, ejecta_z_high],
+                                  kind="linear")
+    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+
+    points_passed["winds_hi"].append([m, z])
+
 # ------------------------------------------------------------------------------
 #
 # SN Ia yields
@@ -1882,10 +2624,19 @@ def test_interpolate_simple_negative_slope(x, x_0, x_1, y_0, y_1, answer):
 @pytest.fixture(scope="session", autouse=True)
 def plot_points():
     yield True  # to make the rest of the code run at teardown
-    for source in ["AGB", "SN", "HN"]:
+    for source in ["AGB", "SN", "HN", "winds_lo", "winds_hi"]:
         fig, ax = bpl.subplots()
-        zs_grid = sorted(list(ejecta_table[source].keys()))
-        ms_grid = ejecta_table[source][zs_grid[0]].keys()
+
+        if source == "winds_lo":
+            ms_grid = ms_winds_lo
+            zs_grid = sorted(list(ejecta_table["winds"].keys()))
+        elif source == "winds_hi":
+            ms_grid = ms_winds_hi
+            zs_grid = sorted(list(ejecta_table["winds"].keys()))
+        else:
+            zs_grid = sorted(list(ejecta_table[source].keys()))
+            ms_grid = ejecta_table[source][zs_grid[0]].keys()
+
         for m in ms_grid:
             ax.axvline(m, lw=0.5, c=bpl.almost_black, ls=":")
             for z in zs_grid:

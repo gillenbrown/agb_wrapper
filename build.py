@@ -130,6 +130,34 @@ build_extension(agb_no_elts_cdef, agb_include_str, "agb_no_elements",
 
 # ==============================================================================
 #
+# Winds
+#
+# ==============================================================================
+# I'll test winds with and without my detailed enrichment prescription. The
+# results should not change, but it will be a nice consistency check
+
+# The functions to include will be the same for both
+winds_cdef = """
+void detailed_enrichment_init(void);  // from core file
+double get_ejecta_winds_py(double, double, double, double, double, double, double);
+double get_cumulative_mass_winds_py(double, double, double, double);
+"""
+# the include will be the same for both
+wind_include_str = '''
+#include "{0}feedback.detailed_enrich.h" 
+#include "{0}feedback.winds-detailed.h"
+'''.format(dir)
+# and the needed sources
+sources = [dir + "feedback.detailed_enrich.c", dir + "feedback.winds-detailed.c"]
+
+# then we can build things!
+build_extension(winds_cdef, wind_include_str, "winds_elements",
+                defines_discrete_elts, sources)
+build_extension(winds_cdef, wind_include_str, "winds_no_elements",
+                defines_discrete_no_elts, sources)
+
+# ==============================================================================
+#
 # Background detailed_enrichment machinery
 #
 # ==============================================================================
@@ -158,7 +186,8 @@ double *get_yields_raw_hn_ii_py(double, double);
 double *get_yields_raw_agb_py(double, double);
 double imf_integral_py(double, double);
 double interpolate_py(double, double, double, double, double);
-double extrapolate_py(double, double, double);"""
+double extrapolate_py(double, double, double);
+double get_cumulative_mass_winds_py(double, double, double, double);"""
 
 
 core_include_str = '#include "{}feedback.detailed_enrich.h"'.format(dir)
