@@ -1,5 +1,8 @@
-import sys, os
-sys.path.append(os.path.abspath("../"))
+# add directory of compiled C code to my path so it can be imported
+import sys
+from pathlib import Path
+this_dir = Path(__file__).absolute().parent
+sys.path.append(str(this_dir.parent.parent))
 
 import pytest
 import numpy as np
@@ -96,12 +99,12 @@ def test_ejecta_table():
     assert ejecta_table["HN"][0.02][40] == pytest.approx([0.490431, 0.0581426, 7.06137, 0.4466, 0.158714, 0.014751, 0.29315, 10.842, 19.17])
 
     assert ejecta_table["winds"][0][50.0] == pytest.approx(0)
-    assert ejecta_table["winds"][0.001][50.0] == pytest.approx(0.00225708032)
-    assert ejecta_table["winds"][0.004][50.0] == pytest.approx(0.006820460176)
-    assert ejecta_table["winds"][0.02][50.0] == pytest.approx(0.01684394046)
-    assert ejecta_table["winds"][0.001][9.6815381955] == pytest.approx(0.003361735716)
-    assert ejecta_table["winds"][0.004][13.9215101572] == pytest.approx(0.01002193139)
-    assert ejecta_table["winds"][0.02][47.6712357817] == pytest.approx(0.01728620496)
+    assert ejecta_table["winds"][0.001][50.0] == pytest.approx(0.002214245627)
+    assert ejecta_table["winds"][0.004][50.0] == pytest.approx(0.006691026118)
+    assert ejecta_table["winds"][0.02][50.0] == pytest.approx(0.0165242876)
+    assert ejecta_table["winds"][0.001][9.6815381955] == pytest.approx(0.00329793898)
+    assert ejecta_table["winds"][0.004][13.9215101572] == pytest.approx(0.009831741985)
+    assert ejecta_table["winds"][0.02][47.6712357817] == pytest.approx(0.01695815911)
 
 
 zs_agb   = sorted(list(ejecta_table["AGB"].keys()))
@@ -2178,72 +2181,75 @@ def test_yields_winds_hi_m_high_z_high():
 # ------------------------------------------------------------------------------
 # These check the values for when the mass is below the range for that source,
 # no matter the metallicity
-@pytest.mark.parametrize("z",zs_agb + make_inbetween_values(zs_agb, -0.005, 0.025))
-@pytest.mark.parametrize("direction", ["low", "high"])
-def test_yields_agb_m_outside(z, direction):
-    # get a random value below the minimum
-    if direction == "low":
-        m = np.random.uniform(-1, 0, 1)
-        assert m < 0
-    else:
-        m = np.random.uniform(8, 9, 1)
-        assert m > 8.0
-
-    points_checked["AGB"].append([m, z])
-
-    # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
-
-    # iterate through all fields
-    for idx in range(n_returned_agb):
-        # the yield should always be zero
-        assert code_ejecta[idx] == 0
-
-    points_passed["AGB"].append([m, z])
-
-@pytest.mark.parametrize("z",zs_sn_ii + make_inbetween_values(zs_sn_ii, -0.005, 0.025))
-@pytest.mark.parametrize("direction", ["low", "high"])
-def test_yields_sn_ii_m_outside(z, direction):
-    # get a random value below the minimum
-    if direction == "low":
-        m = np.random.uniform(5, 8, 1)
-        assert m < 8.0
-    else:
-        m = np.random.uniform(50, 55, 1)
-        assert m > 50.0
-    points_checked["SN"].append([m, z])
-
-    # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
-
-    # iterate through all fields
-    for idx in range(n_returned_sn_ii):
-        # the yield should always be zero
-        assert code_ejecta[idx] == 0
-
-    points_passed["SN"].append([m, z])
-
-@pytest.mark.parametrize("z",zs_hn_ii + make_inbetween_values(zs_hn_ii, -0.005, 0.025))
-@pytest.mark.parametrize("direction", ["low", "high"])
-def test_yields_hn_ii_m_outside(z, direction):
-    # get a random value below the minimum
-    if direction == "low":
-        m = np.random.uniform(15, 20, 1)
-        assert m < 20
-    else:
-        m = np.random.uniform(50, 55, 1)
-        assert m > 50.0
-    points_checked["HN"].append([m, z])
-
-    # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
-
-    # iterate through all fields
-    for idx in range(n_returned_hn_ii):
-        # the yield should always be zero
-        assert code_ejecta[idx] == 0
-
-    points_passed["HN"].append([m, z])
+# UPDATE: These are commented out since we longer do this restriction on the
+# yield calculations themselves, they are handled in the functions that
+# determine how much ejecta to have in a given timestep
+# @pytest.mark.parametrize("z",zs_agb + make_inbetween_values(zs_agb, -0.005, 0.025))
+# @pytest.mark.parametrize("direction", ["low", "high"])
+# def test_yields_agb_m_outside(z, direction):
+#     # get a random value below the minimum
+#     if direction == "low":
+#         m = np.random.uniform(-1, 0, 1)
+#         assert m < 0
+#     else:
+#         m = np.random.uniform(8, 9, 1)
+#         assert m > 8.0
+#
+#     points_checked["AGB"].append([m, z])
+#
+#     # and the values the code says for the mass of interest
+#     code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+#
+#     # iterate through all fields
+#     for idx in range(n_returned_agb):
+#         # the yield should always be zero
+#         assert code_ejecta[idx] == 0
+#
+#     points_passed["AGB"].append([m, z])
+#
+# @pytest.mark.parametrize("z",zs_sn_ii + make_inbetween_values(zs_sn_ii, -0.005, 0.025))
+# @pytest.mark.parametrize("direction", ["low", "high"])
+# def test_yields_sn_ii_m_outside(z, direction):
+#     # get a random value below the minimum
+#     if direction == "low":
+#         m = np.random.uniform(5, 8, 1)
+#         assert m < 8.0
+#     else:
+#         m = np.random.uniform(50, 55, 1)
+#         assert m > 50.0
+#     points_checked["SN"].append([m, z])
+#
+#     # and the values the code says for the mass of interest
+#     code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+#
+#     # iterate through all fields
+#     for idx in range(n_returned_sn_ii):
+#         # the yield should always be zero
+#         assert code_ejecta[idx] == 0
+#
+#     points_passed["SN"].append([m, z])
+#
+# @pytest.mark.parametrize("z",zs_hn_ii + make_inbetween_values(zs_hn_ii, -0.005, 0.025))
+# @pytest.mark.parametrize("direction", ["low", "high"])
+# def test_yields_hn_ii_m_outside(z, direction):
+#     # get a random value below the minimum
+#     if direction == "low":
+#         m = np.random.uniform(15, 20, 1)
+#         assert m < 20
+#     else:
+#         m = np.random.uniform(50, 55, 1)
+#         assert m > 50.0
+#     points_checked["HN"].append([m, z])
+#
+#     # and the values the code says for the mass of interest
+#     code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+#
+#     # iterate through all fields
+#     for idx in range(n_returned_hn_ii):
+#         # the yield should always be zero
+#         assert code_ejecta[idx] == 0
+#
+#     points_passed["HN"].append([m, z])
 
 # This doesn't apply to winds, since there is no range where they are active but
 # there is no entry in the table
@@ -2666,4 +2672,5 @@ def plot_points():
 
         ax.add_labels("Stellar Mass [$M_\odot$]", "Metallicity")
 
-        fig.savefig("../plots/grid_{}_checked.pdf".format(source))
+        plot_loc = this_dir.parent/"plots/grid_{}_checked.pdf".format(source)
+        fig.savefig(str(plot_loc))

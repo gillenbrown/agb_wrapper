@@ -4,6 +4,9 @@ import numpy as np
 from scipy import special
 from pytest import approx
 
+from pathlib import Path
+this_dir = Path(__file__).absolute().parent
+
 def true_f_bound(eps_int):
     alpha_star = 0.48
     f_sat = 0.94
@@ -14,7 +17,8 @@ def true_f_bound(eps_int):
 
 def test_destruction_stdout():
     num_completed = 0
-    with open("./f_bound_stdout.txt", "r") as stdout:
+    stdout_file = this_dir/"f_bound_stdout.txt"
+    with stdout_file.open("r") as stdout:
         for idx, line in enumerate(stdout):
             if "eps_int" not in line:
                 continue

@@ -15,14 +15,19 @@ defines_continuous_elts = ["PY_TESTING", "ENRICHMENT_ELEMENTS"]
 defines_discrete_no_elts = ["PY_TESTING", "DISCRETE_SN"]
 defines_continuous_no_elts = ["PY_TESTING",]
 
-def build_extension(cdef, include_str, name, defines, sources):
+def build_extension(cdef, include_str, name, defines, sources, need_gsl=False):
     ffibuilder = FFI()
     ffibuilder.cdef(cdef)
 
     # parse the defines into the right format
     macros = [(define, None) for define in defines]
-    ffibuilder.set_source(name, include_str, define_macros=macros,
-                          sources=sources)
+    if need_gsl:
+        ffibuilder.set_source(name, include_str, define_macros=macros,
+                              sources=sources,
+                              libraries=["gsl"])
+    else:
+        ffibuilder.set_source(name, include_str, define_macros=macros,
+                              sources=sources)
     ffibuilder.compile(verbose=True)
 
     # after this is build, it will have a weird name. We want to rename it so
@@ -72,12 +77,10 @@ build_extension(snia_no_elts_cdef, snia_include_str, "snia_continuous_no_element
 # I'll test SNII with and without my detailed enrichmen prescription
 
 # The functions to include will be the same for both
-snii_elts_cdef = """
+snii_cdef = """
 void detailed_enrichment_init(void);  // from core file
-double *get_ejecta_sn_ii_py(double, double, double, double, double);
-"""
-snii_no_elts_cdef = """
-void detailed_enrichment_init(void);  // from core file
+void init_rand(void);
+int random_binomial_py(double, unsigned int);
 double *get_ejecta_sn_ii_py(double, double, double, double, double);
 """
 # the include will be the same for both
@@ -89,14 +92,14 @@ snii_include_str = '''
 sources = [dir + "feedback.detailed_enrich.c", dir + "feedback.snII-detailed.c"]
 
 # then we can build things!
-build_extension(snii_elts_cdef, snii_include_str, "snii_discrete_elements",
-                defines_discrete_elts, sources)
-build_extension(snii_no_elts_cdef, snii_include_str, "snii_discrete_no_elements",
-                defines_discrete_no_elts, sources)
-build_extension(snii_elts_cdef, snii_include_str, "snii_continuous_elements",
-                defines_continuous_elts, sources)
-build_extension(snii_no_elts_cdef, snii_include_str, "snii_continuous_no_elements",
-                defines_continuous_no_elts, sources)
+build_extension(snii_cdef, snii_include_str, "snii_discrete_elements",
+                defines_discrete_elts, sources, need_gsl=True)
+build_extension(snii_cdef, snii_include_str, "snii_discrete_no_elements",
+                defines_discrete_no_elts, sources, need_gsl=True)
+build_extension(snii_cdef, snii_include_str, "snii_continuous_elements",
+                defines_continuous_elts, sources, need_gsl=True)
+build_extension(snii_cdef, snii_include_str, "snii_continuous_no_elements",
+                defines_continuous_no_elts, sources, need_gsl=True)
 
 # ==============================================================================
 #

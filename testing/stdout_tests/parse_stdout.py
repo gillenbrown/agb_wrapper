@@ -47,7 +47,7 @@ class star_ejecta(object):
         self.is_complete()
 
 
-def parse_file(max_number):
+def parse_file(stdout_file, max_number):
     """
 
     :return:
@@ -61,7 +61,7 @@ def parse_file(max_number):
     complete_stars_agb = []
 
     timesteps = defaultdict(dict)
-    with open("./snii_stdout.txt", "r") as stdout:
+    with open(stdout_file, "r") as stdout:
         for idx, line in enumerate(stdout):
             # if idx > 2000:
             #     continue

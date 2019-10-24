@@ -1,5 +1,11 @@
 import pytest
 
+# add directory of compiled C code to my path so it can be imported
+import sys
+from pathlib import Path
+this_dir = Path(__file__).absolute().parent
+sys.path.append(str(this_dir.parent.parent))
+
 import numpy as np
 from scipy import integrate
 

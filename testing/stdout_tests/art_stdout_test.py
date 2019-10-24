@@ -1,5 +1,5 @@
-import sys, os
-
+import sys
+from pathlib import Path
 import pytest
 from pytest import approx
 import random
@@ -11,6 +11,11 @@ import numpy as np
 import tabulation
 
 import parse_stdout
+
+# add directory of compiled C code to my path so it can be imported
+this_dir = Path(__file__).absolute().parent
+sys.path.append(str(this_dir.parent.parent))
+
 from core_elts import lib as art_enrich_core
 art_enrich_core.detailed_enrichment_init()
 
@@ -100,7 +105,8 @@ def code_energy_func(a_box):
 number_to_check = 1000
 # We want some that have winds, some that have SN, and some that have AGB
 good = False
-all_source_timesteps = parse_stdout.parse_file(10**4)
+all_source_timesteps = parse_stdout.parse_file(str(this_dir/"snii_stdout.txt"),
+                                               10**4)
 wind_timesteps_all = all_source_timesteps[0]
 snii_timesteps_inactive_all = all_source_timesteps[1]
 snii_timesteps_active_all = all_source_timesteps[2]
