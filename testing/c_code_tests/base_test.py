@@ -6,18 +6,29 @@ sys.path.append(str(this_dir.parent.parent))
 
 import pytest
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, integrate
 
 import betterplotlib as bpl
 bpl.presentation_style()
 
 import tabulation
 
-from core_elts import lib as core_elts
-# from core_no_elts import lib as core_no_elts
+from core_enrich_ia_elts_cluster_discrete import lib as core_e_i_e_c_d
+from core_enrich_ia_elts_cluster import lib as core_e_i_e_c_c
+from core_enrich_ia_elts_discrete import lib as core_e_i_e_d
+from core_enrich_ia_elts import lib as core_e_i_e_c
+from core_enrich_ia_discrete import lib as core_e_i_d
+from core_enrich_ia import lib as core_e_i_c
+from core_enrich_discrete import lib as core_e_d
+from core_enrich import lib as core_e_c
+from core_discrete import lib as core_d
+from core_none import lib as core_c
 
+all_cores = [core_e_i_e_c_d, core_e_i_e_c_c, core_e_i_e_d, core_e_i_e_c,
+             core_e_i_d, core_e_i_c, core_e_d, core_e_c, core_d, core_c]
 # We need to initialize the table by doing the read in.
-core_elts.detailed_enrichment_init()
+for core in all_cores:
+    core.detailed_enrichment_init()
 
 
 # convenience function
@@ -35,6 +46,7 @@ n_returned_agb = 6
 n_returned_sn_ii = 9
 n_returned_hn_ii = 9
 
+imf = tabulation.IMF("Kroupa", 0.08, 50, 1)
 lifetimes = tabulation.Lifetimes("Raiteri_96")
 def lt(m, z):
     return lifetimes.lifetime(m, z)
@@ -73,6 +85,7 @@ for source in ["AGB", "SN", "HN", "winds"]:
                 ejecta_table[source][z] = dict()
 
             ejecta_table[source][z][m] = ejecta
+
 
 def test_ejecta_table():
     # This checks that I read in the table correctly, and reuses the many rows
@@ -119,7 +132,7 @@ ms_hn_ii = sorted(list(ejecta_table["HN"][zs_hn_ii[0]].keys()))
 ms_winds_lo = sorted(list(ejecta_table["winds"][zs_winds[0]].keys()))[:10]
 ms_winds_hi = sorted(list(ejecta_table["winds"][zs_winds[0]].keys()))[-10:]
 
-zs_snia = [0.002, 0.02]
+zs_sn_ia = [0.002, 0.02]
 
 # I want to keep a log of the points checked, so that I can verify that I'm
 # checking everything I should be
@@ -149,22 +162,36 @@ def make_inbetween_values(values, min_allowed_value, max_allowed_value):
 # metallicity checking
 #
 # ------------------------------------------------------------------------------
-@pytest.mark.parametrize("z_vals_truth, func",
-                         [(zs_agb, core_elts.get_z_agb),
-                          (zs_sn_ii, core_elts.get_z_sn_ii),
-                          (zs_winds, core_elts.get_z_winds),
-                          (zs_snia, core_elts.get_z_sn_ia)])
-def test_metallicities(z_vals_truth, func):
-    for idx in range(len(z_vals_truth)):
-        truth = z_vals_truth[idx]
-        test = func(idx)
-        assert truth == test
+@pytest.mark.parametrize("core", all_cores)
+def test_metallicities_agb(core):
+    for idx, true in enumerate(zs_agb):
+        test = core.get_z_agb(idx)
+        assert true == test
+
+@pytest.mark.parametrize("core", all_cores)
+def test_metallicities_snii(core):
+    for idx, true in enumerate(zs_sn_ii):
+        test = core.get_z_sn_ii(idx)
+        assert true == test
+
+@pytest.mark.parametrize("core", all_cores)
+def test_metallicities_snia(core):
+    for idx, true in enumerate(zs_sn_ia):
+        test = core.get_z_sn_ia(idx)
+        assert true == test
+
+@pytest.mark.parametrize("core", all_cores)
+def test_metallicities_winds(core):
+    for idx, true in enumerate(zs_winds):
+        test = core.get_z_winds(idx)
+        assert true == test
 
 # ------------------------------------------------------------------------------
 #
 # metallicity index checking
 #
 # ------------------------------------------------------------------------------
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z, true_idx_0, true_idx_1",
                          [[-0.5,    0, 0],
                           [0,       0, 0],
@@ -180,13 +207,12 @@ def test_metallicities(z_vals_truth, func):
                           [0.02,    4, 4],
                           [0.03,    4, 4],
                           [1.4,     4, 4]])
-def test_z_idxs_agb(z, true_idx_0, true_idx_1):
-    z_idx = core_elts.find_z_bound_idxs_agb_py(z)
+def test_z_idxs_agb(core, z, true_idx_0, true_idx_1):
+    z_idx = core.find_z_bound_idxs_agb_py(z)
     assert z_idx[0] == true_idx_0
     assert z_idx[1] == true_idx_1
 
-@pytest.mark.parametrize("func", [core_elts.find_z_bound_idxs_winds_py,
-                                  core_elts.find_z_bound_idxs_sn_ii_py])
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z, true_idx_0, true_idx_1",
                          [[-0.5,   0, 0],
                           [0,      0, 0],
@@ -198,12 +224,30 @@ def test_z_idxs_agb(z, true_idx_0, true_idx_1):
                           [0.02,   3, 3],
                           [0.03,   3, 3],
                           [1.4,    3, 3]])
-def test_z_idxs_winds_sn_ii(func, z, true_idx_0, true_idx_1):
-    z_idx = func(z)
+def test_z_idxs_winds_winds(core, z, true_idx_0, true_idx_1):
+    z_idx = core.find_z_bound_idxs_winds_py(z)
     assert z_idx[0] == true_idx_0
     assert z_idx[1] == true_idx_1
 
 
+@pytest.mark.parametrize("core", all_cores)
+@pytest.mark.parametrize("z, true_idx_0, true_idx_1",
+                         [[-0.5,   0, 0],
+                          [0,      0, 0],
+                          [0.0005, 0, 1],
+                          [0.001,  1, 1],
+                          [0.003,  1, 2],
+                          [0.004,  2, 2],
+                          [0.01,   2, 3],
+                          [0.02,   3, 3],
+                          [0.03,   3, 3],
+                          [1.4,    3, 3]])
+def test_z_idxs_winds_sn_ii(core, z, true_idx_0, true_idx_1):
+    z_idx = core.find_z_bound_idxs_sn_ii_py(z)
+    assert z_idx[0] == true_idx_0
+    assert z_idx[1] == true_idx_1
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z, true_idx_0, true_idx_1",
                          [[-0.5,   0, 0],
                           [0,      0, 0],
@@ -214,8 +258,8 @@ def test_z_idxs_winds_sn_ii(func, z, true_idx_0, true_idx_1):
                           [0.02,   1, 1],
                           [0.03,   1, 1],
                           [1.4,    1, 1]])
-def test_z_idxs_sn_ia(z, true_idx_0, true_idx_1):
-    z_idx = core_elts.find_z_bound_idxs_sn_ia_py(z)
+def test_z_idxs_sn_ia(core, z, true_idx_0, true_idx_1):
+    z_idx = core.find_z_bound_idxs_sn_ia_py(z)
     assert z_idx[0] == true_idx_0
     assert z_idx[1] == true_idx_1
 
@@ -224,6 +268,7 @@ def test_z_idxs_sn_ia(z, true_idx_0, true_idx_1):
 # mass model index checking
 #
 # ------------------------------------------------------------------------------
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m, true_idx_0, true_idx_1",
                          [[0.8, 0, 0],
                           [1.0, 0, 0],
@@ -244,12 +289,13 @@ def test_z_idxs_sn_ia(z, true_idx_0, true_idx_1):
                           [7.7, 7, 7],
                           [8.0, 7, 7]
                           ])
-def test_m_idxs_agb(m, true_idx_0, true_idx_1):
-    m_idx = core_elts.find_mass_bound_idxs_agb_py(m)
+def test_m_idxs_agb(core, m, true_idx_0, true_idx_1):
+    m_idx = core.find_mass_bound_idxs_agb_py(m)
     assert m_idx[0] == true_idx_0
     assert m_idx[1] == true_idx_1
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m, true_idx_0, true_idx_1",
                          [[12, 0, 0],
                           [13, 0, 0],
@@ -268,11 +314,12 @@ def test_m_idxs_agb(m, true_idx_0, true_idx_1):
                           [45, 6, 6],
                           [50, 6, 6]
                           ])
-def test_m_idxs_sn(m, true_idx_0, true_idx_1):
-    m_idx = core_elts.find_mass_bound_idxs_sn_ii_py(m)
+def test_m_idxs_sn(core, m, true_idx_0, true_idx_1):
+    m_idx = core.find_mass_bound_idxs_sn_ii_py(m)
     assert m_idx[0] == true_idx_0
     assert m_idx[1] == true_idx_1
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m, true_idx_0, true_idx_1",
                          [[18, 0, 0],
                           [20, 0, 0],
@@ -284,11 +331,38 @@ def test_m_idxs_sn(m, true_idx_0, true_idx_1):
                           [40, 3, 3],
                           [40, 3, 3]
                           ])
-def test_m_idxs_hn(m, true_idx_0, true_idx_1):
-    m_idx = core_elts.find_mass_bound_idxs_hn_ii_py(m)
+def test_m_idxs_hn(core, m, true_idx_0, true_idx_1):
+    m_idx = core.find_mass_bound_idxs_hn_ii_py(m)
     assert m_idx[0] == true_idx_0
     assert m_idx[1] == true_idx_1
 
+
+@pytest.mark.parametrize("core", all_cores)
+@pytest.mark.parametrize("m, true_idx_0, true_idx_1",
+                         [[50.00001,      0, 0],
+                          [50,            0, 0],
+                          [49.999,        0, 1],
+                          [49.9083632816, 1, 1],
+                          [49.90,         1, 2],
+                          [29.4259464135, 289, 289],
+                          [29.40,         289, 290],
+                          [29.3720164703, 290, 290],
+                          [8.0146887956,  998, 998],
+                          [8.0001,        998, 999],
+                          [8.0,           999, 999],
+                          [7.5,           999, 999]
+                          ])
+def test_m_idxs_winds(core, m, true_idx_0, true_idx_1):
+    m_idx = core.find_mass_bound_idxs_winds_py(m)
+    assert m_idx[0] == true_idx_0
+    assert m_idx[1] == true_idx_1
+
+@pytest.mark.parametrize("m", [7.9, 8, 8.1, 23, 36, 49.9, 50, 50.1])
+@pytest.mark.parametrize("core", all_cores)
+def test_wind_guesses(core, m):
+    guess = core.guess_mass_idx_winds_py(m)
+    true = core.find_mass_bound_idxs_winds_py(m)[0]
+    assert abs(guess - true) <= 1
 
 
 # ------------------------------------------------------------------------------
@@ -298,60 +372,65 @@ def test_m_idxs_hn(m, true_idx_0, true_idx_1):
 # ------------------------------------------------------------------------------
 # See that the code returns the correct values with the values requested exactly
 # align with the input table
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_agb)
 @pytest.mark.parametrize("m", ms_agb)
-def test_yields_agb_m_align_z_align(z, m):
+def test_yields_agb_m_align_z_align(core, z, m):
     points_checked["AGB"].append([m, z])
     true_ejecta = ejecta_table["AGB"][z][m]
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
     for idx in range(len(true_ejecta)):
         assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
     points_passed["AGB"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_sn_ii)
 @pytest.mark.parametrize("m", ms_sn_ii)
-def test_yields_sn_ii_m_align_z_align(z, m):
+def test_yields_sn_ii_m_align_z_align(core, z, m):
     points_checked["SN"].append([m, z])
     true_ejecta = ejecta_table["SN"][z][m]
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
     for idx in range(len(true_ejecta)):
         assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
     points_passed["SN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_hn_ii)
 @pytest.mark.parametrize("m", ms_hn_ii)
-def test_yields_hn_ii_m_align_z_align(z, m):
+def test_yields_hn_ii_m_align_z_align(core, z, m):
     points_checked["HN"].append([m, z])
     true_ejecta = ejecta_table["HN"][z][m]
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
     for idx in range(len(true_ejecta)):
         assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
     points_passed["HN"].append([m, z])
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_winds)
 @pytest.mark.parametrize("m", ms_winds_lo)
-def test_yields_winds_lo_m_align_z_align(z, m):
+def test_yields_winds_lo_m_align_z_align(core, z, m):
     points_checked["winds_lo"].append([m, z])
     true_ejecta = ejecta_table["winds"][z][m]
 
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
     assert code_ejecta == pytest.approx(true_ejecta, rel=r_tol, abs=a_tol)
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_winds)
 @pytest.mark.parametrize("m", ms_winds_hi)
-def test_yields_winds_hi_m_align_z_align(z, m):
+def test_yields_winds_hi_m_align_z_align(core, z, m):
     points_checked["winds_hi"].append([m, z])
     true_ejecta = ejecta_table["winds"][z][m]
 
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
     assert code_ejecta == pytest.approx(true_ejecta, rel=r_tol, abs=a_tol)
     points_passed["winds_hi"].append([m, z])
 
@@ -364,9 +443,10 @@ def test_yields_winds_hi_m_align_z_align(z, m):
 # These check the values for when the mass lines up with the grid, but the
 # metallicity value doesn't. This is all inside the range of given metallicity,
 # the tests for outside this range are done later
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_agb) - 1))
 @pytest.mark.parametrize("m", ms_agb)
-def test_yields_agb_m_align_z_interp(z_idx, m):
+def test_yields_agb_m_align_z_interp(core, z_idx, m):
     # get a random value between two endpoints on the table
     z_low = zs_agb[z_idx]
     z_high = zs_agb[z_idx + 1]
@@ -380,7 +460,7 @@ def test_yields_agb_m_align_z_interp(z_idx, m):
     ejecta_high = ejecta_table["AGB"][z_high][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -396,9 +476,10 @@ def test_yields_agb_m_align_z_interp(z_idx, m):
     points_passed["AGB"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_sn_ii) - 1))
 @pytest.mark.parametrize("m", ms_sn_ii)
-def test_yields_sn_ii_m_align_z_interp(z_idx, m):
+def test_yields_sn_ii_m_align_z_interp(core, z_idx, m):
     # get a random value between two endpoints on the table
     z_low = zs_sn_ii[z_idx]
     z_high = zs_sn_ii[z_idx + 1]
@@ -412,7 +493,7 @@ def test_yields_sn_ii_m_align_z_interp(z_idx, m):
     ejecta_high = ejecta_table["SN"][z_high][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -427,9 +508,10 @@ def test_yields_sn_ii_m_align_z_interp(z_idx, m):
     points_passed["SN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_hn_ii) - 1))
 @pytest.mark.parametrize("m", ms_hn_ii)
-def test_yields_hn_ii_m_align_z_interp(z_idx, m):
+def test_yields_hn_ii_m_align_z_interp(core, z_idx, m):
     # get a random value between two endpoints on the table
     z_low = zs_hn_ii[z_idx]
     z_high = zs_hn_ii[z_idx + 1]
@@ -443,7 +525,7 @@ def test_yields_hn_ii_m_align_z_interp(z_idx, m):
     ejecta_high = ejecta_table["HN"][z_high][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -458,9 +540,10 @@ def test_yields_hn_ii_m_align_z_interp(z_idx, m):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
 @pytest.mark.parametrize("m", ms_winds_lo)
-def test_yields_winds_lo_m_align_z_interp(z_idx, m):
+def test_yields_winds_lo_m_align_z_interp(core, z_idx, m):
     # get a random value between two endpoints on the table
     z_low = zs_winds[z_idx]
     z_high = zs_winds[z_idx + 1]
@@ -475,7 +558,7 @@ def test_yields_winds_lo_m_align_z_interp(z_idx, m):
 
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -489,9 +572,10 @@ def test_yields_winds_lo_m_align_z_interp(z_idx, m):
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
 @pytest.mark.parametrize("m", ms_winds_hi)
-def test_yields_winds_hi_m_align_z_interp(z_idx, m):
+def test_yields_winds_hi_m_align_z_interp(core, z_idx, m):
     # get a random value between two endpoints on the table
     z_low = zs_winds[z_idx]
     z_high = zs_winds[z_idx + 1]
@@ -506,7 +590,7 @@ def test_yields_winds_hi_m_align_z_interp(z_idx, m):
 
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -527,8 +611,9 @@ def test_yields_winds_hi_m_align_z_interp(z_idx, m):
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity value is above the maximum
 # allowed value, for masses in the grid
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_agb)
-def test_yields_agb_m_align_z_high(m):
+def test_yields_agb_m_align_z_high(core, m):
     z_max = max(zs_agb)
     # get a random value between two endpoints on the table
     z = np.random.uniform(z_max, 0.025, 1)
@@ -540,7 +625,7 @@ def test_yields_agb_m_align_z_high(m):
     ejecta_max = ejecta_table["AGB"][z_max][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -550,8 +635,9 @@ def test_yields_agb_m_align_z_high(m):
     points_passed["AGB"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_sn_ii)
-def test_yields_sn_ii_m_align_z_high(m):
+def test_yields_sn_ii_m_align_z_high(core, m):
     z_max = max(zs_sn_ii)
     # get a random value between two endpoints on the table
     z = np.random.uniform(z_max, 0.025, 1)
@@ -563,7 +649,7 @@ def test_yields_sn_ii_m_align_z_high(m):
     ejecta_max = ejecta_table["SN"][z_max][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -573,8 +659,9 @@ def test_yields_sn_ii_m_align_z_high(m):
     points_passed["SN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_hn_ii)
-def test_yields_hn_ii_m_align_z_high(m):
+def test_yields_hn_ii_m_align_z_high(core, m):
     z_max = max(zs_hn_ii)
     # get a random value between two endpoints on the table
     z = np.random.uniform(z_max, 0.025, 1)
@@ -586,7 +673,7 @@ def test_yields_hn_ii_m_align_z_high(m):
     ejecta_max = ejecta_table["HN"][z_max][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -596,8 +683,9 @@ def test_yields_hn_ii_m_align_z_high(m):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_winds_lo)
-def test_yields_winds_lo_m_align_z_high(m):
+def test_yields_winds_lo_m_align_z_high(core, m):
     z_max = max(zs_winds)
     # get a random value between two endpoints on the table
     z = np.random.uniform(z_max, 0.025, 1)
@@ -611,7 +699,7 @@ def test_yields_winds_lo_m_align_z_high(m):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
     assert code_ejecta == pytest.approx(ejecta_max, rel=r_tol, abs=a_tol)
@@ -619,8 +707,9 @@ def test_yields_winds_lo_m_align_z_high(m):
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_winds_hi)
-def test_yields_winds_hi_m_align_z_high(m):
+def test_yields_winds_hi_m_align_z_high(core, m):
     z_max = max(zs_winds)
     # get a random value between two endpoints on the table
     z = np.random.uniform(z_max, 0.025, 1)
@@ -634,7 +723,7 @@ def test_yields_winds_hi_m_align_z_high(m):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
     assert code_ejecta == pytest.approx(ejecta_max, rel=r_tol, abs=a_tol)
@@ -648,8 +737,9 @@ def test_yields_winds_hi_m_align_z_high(m):
 # ------------------------------------------------------------------------------
 # These check the values for when the mass lines up with the grid, but the
 # metallicity value is below the minimum allowed value
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_agb)
-def test_yields_agb_m_align_z_low(m):
+def test_yields_agb_m_align_z_low(core, m):
     z_min = min(zs_agb)
     # get a random value between two endpoints on the table
     z = np.random.uniform(-0.005, z_min, 1)
@@ -661,7 +751,7 @@ def test_yields_agb_m_align_z_low(m):
     ejecta_min = ejecta_table["AGB"][z_min][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -671,8 +761,9 @@ def test_yields_agb_m_align_z_low(m):
     points_passed["AGB"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_sn_ii)
-def test_yields_sn_ii_m_align_z_low(m):
+def test_yields_sn_ii_m_align_z_low(core, m):
     z_min = min(zs_sn_ii)  # should be zero, so we choose a negative value
     # get a random value between two endpoints on the table
     z = np.random.uniform(-0.005, z_min, 1)
@@ -684,7 +775,7 @@ def test_yields_sn_ii_m_align_z_low(m):
     ejecta_min = ejecta_table["SN"][z_min][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -694,8 +785,9 @@ def test_yields_sn_ii_m_align_z_low(m):
     points_passed["SN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_hn_ii)
-def test_yields_hn_ii_m_align_z_low(m):
+def test_yields_hn_ii_m_align_z_low(core, m):
     z_min = min(zs_hn_ii)
     # get a random value between two endpoints on the table
     z = np.random.uniform(-0.005, z_min, 1)
@@ -707,7 +799,7 @@ def test_yields_hn_ii_m_align_z_low(m):
     ejecta_min = ejecta_table["HN"][z_min][m]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -717,8 +809,9 @@ def test_yields_hn_ii_m_align_z_low(m):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_winds_lo)
-def test_yields_winds_lo_m_align_z_low(m):
+def test_yields_winds_lo_m_align_z_low(core, m):
     z_min = min(zs_winds)
     # get a random value between two endpoints on the table
     z = np.random.uniform(-0.005, z_min, 1)
@@ -732,7 +825,7 @@ def test_yields_winds_lo_m_align_z_low(m):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
     assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
@@ -740,8 +833,9 @@ def test_yields_winds_lo_m_align_z_low(m):
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m", ms_winds_hi)
-def test_yields_winds_hi_m_align_z_low(m):
+def test_yields_winds_hi_m_align_z_low(core, m):
     z_min = min(zs_winds)
     # get a random value between two endpoints on the table
     z = np.random.uniform(-0.005, z_min, 1)
@@ -755,7 +849,7 @@ def test_yields_winds_hi_m_align_z_low(m):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
     assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
@@ -771,9 +865,10 @@ def test_yields_winds_hi_m_align_z_low(m):
 # These check the values for when the metallicity lines up with the grid, but
 # the mass value doesn't. This is all inside the range of given mass, the tests
 # for outside this range are done later
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_agb) - 1))
 @pytest.mark.parametrize("z", zs_agb)
-def test_yields_agb_m_interp_z_align(m_idx, z):
+def test_yields_agb_m_interp_z_align(core, m_idx, z):
     # get a random value between two endpoints on the table
     m_low = ms_agb[m_idx]
     m_high = ms_agb[m_idx + 1]
@@ -787,7 +882,7 @@ def test_yields_agb_m_interp_z_align(m_idx, z):
     ejecta_high = ejecta_table["AGB"][z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -802,9 +897,11 @@ def test_yields_agb_m_interp_z_align(m_idx, z):
 
     points_passed["AGB"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_sn_ii) - 1))
 @pytest.mark.parametrize("z", zs_sn_ii)
-def test_yields_sn_m_interp_z_align(m_idx, z):
+def test_yields_sn_m_interp_z_align(core, m_idx, z):
     # get a random value between two endpoints on the table
     m_low = ms_sn_ii[m_idx]
     m_high = ms_sn_ii[m_idx + 1]
@@ -818,7 +915,7 @@ def test_yields_sn_m_interp_z_align(m_idx, z):
     ejecta_high = ejecta_table["SN"][z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -833,9 +930,11 @@ def test_yields_sn_m_interp_z_align(m_idx, z):
 
     points_passed["SN"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_hn_ii) - 1))
 @pytest.mark.parametrize("z", zs_hn_ii)
-def test_yields_hn_m_interp_z_align(m_idx, z):
+def test_yields_hn_m_interp_z_align(core, m_idx, z):
     # get a random value between two endpoints on the table
     m_low = ms_hn_ii[m_idx]
     m_high = ms_hn_ii[m_idx + 1]
@@ -849,7 +948,7 @@ def test_yields_hn_m_interp_z_align(m_idx, z):
     ejecta_high = ejecta_table["HN"][z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -865,9 +964,10 @@ def test_yields_hn_m_interp_z_align(m_idx, z):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
 @pytest.mark.parametrize("z", zs_winds)
-def test_yields_winds_lo_m_interp_z_align(m_idx, z):
+def test_yields_winds_lo_m_interp_z_align(core, m_idx, z):
     # get a random value between two endpoints on the table
     m_low = ms_winds_lo[m_idx]
     m_high = ms_winds_lo[m_idx + 1]
@@ -883,7 +983,7 @@ def test_yields_winds_lo_m_interp_z_align(m_idx, z):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -897,9 +997,10 @@ def test_yields_winds_lo_m_interp_z_align(m_idx, z):
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
 @pytest.mark.parametrize("z", zs_winds)
-def test_yields_winds_hi_m_interp_z_align(m_idx, z):
+def test_yields_winds_hi_m_interp_z_align(core, m_idx, z):
     # get a random value between two endpoints on the table
     m_low = ms_winds_hi[m_idx]
     m_high = ms_winds_hi[m_idx + 1]
@@ -915,7 +1016,7 @@ def test_yields_winds_hi_m_interp_z_align(m_idx, z):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -936,8 +1037,9 @@ def test_yields_winds_hi_m_interp_z_align(m_idx, z):
 # ------------------------------------------------------------------------------
 # These check the values for when the mass value needs interpolating, and the
 # metallicity value is higher than any of the models
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_agb) - 1))
-def test_yields_agb_m_interp_z_high(m_idx):
+def test_yields_agb_m_interp_z_high(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_agb[m_idx]
     m_high = ms_agb[m_idx + 1]
@@ -955,7 +1057,7 @@ def test_yields_agb_m_interp_z_high(m_idx):
     ejecta_high = ejecta_table["AGB"][max_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -970,8 +1072,10 @@ def test_yields_agb_m_interp_z_high(m_idx):
 
     points_passed["AGB"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_sn_ii) - 1))
-def test_yields_sn_m_interp_z_high(m_idx):
+def test_yields_sn_m_interp_z_high(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_sn_ii[m_idx]
     m_high = ms_sn_ii[m_idx + 1]
@@ -989,7 +1093,7 @@ def test_yields_sn_m_interp_z_high(m_idx):
     ejecta_high = ejecta_table["SN"][max_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1004,8 +1108,10 @@ def test_yields_sn_m_interp_z_high(m_idx):
 
     points_passed["SN"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_hn_ii) - 1))
-def test_yields_hn_m_interp_z_high(m_idx):
+def test_yields_hn_m_interp_z_high(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_hn_ii[m_idx]
     m_high = ms_hn_ii[m_idx + 1]
@@ -1023,7 +1129,7 @@ def test_yields_hn_m_interp_z_high(m_idx):
     ejecta_high = ejecta_table["HN"][max_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1039,8 +1145,9 @@ def test_yields_hn_m_interp_z_high(m_idx):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
-def test_yields_winds_lo_m_interp_z_high(m_idx):
+def test_yields_winds_lo_m_interp_z_high(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_winds_lo[m_idx]
     m_high = ms_winds_lo[m_idx + 1]
@@ -1060,7 +1167,7 @@ def test_yields_winds_lo_m_interp_z_high(m_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -1074,8 +1181,9 @@ def test_yields_winds_lo_m_interp_z_high(m_idx):
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
-def test_yields_winds_hi_m_interp_z_high(m_idx):
+def test_yields_winds_hi_m_interp_z_high(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_winds_hi[m_idx]
     m_high = ms_winds_hi[m_idx + 1]
@@ -1095,7 +1203,7 @@ def test_yields_winds_hi_m_interp_z_high(m_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -1115,8 +1223,9 @@ def test_yields_winds_hi_m_interp_z_high(m_idx):
 # ------------------------------------------------------------------------------
 # These check the values for when the mass value needs interpolating, and the
 # metallicity value is lower than any of the models
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_agb) - 1))
-def test_yields_agb_m_interp_z_low(m_idx):
+def test_yields_agb_m_interp_z_low(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_agb[m_idx]
     m_high = ms_agb[m_idx + 1]
@@ -1134,7 +1243,7 @@ def test_yields_agb_m_interp_z_low(m_idx):
     ejecta_high = ejecta_table["AGB"][min_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1149,8 +1258,10 @@ def test_yields_agb_m_interp_z_low(m_idx):
 
     points_passed["AGB"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_sn_ii) - 1))
-def test_yields_sn_m_interp_z_low(m_idx):
+def test_yields_sn_m_interp_z_low(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_sn_ii[m_idx]
     m_high = ms_sn_ii[m_idx + 1]
@@ -1168,7 +1279,7 @@ def test_yields_sn_m_interp_z_low(m_idx):
     ejecta_high = ejecta_table["SN"][min_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1183,8 +1294,10 @@ def test_yields_sn_m_interp_z_low(m_idx):
 
     points_passed["SN"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_hn_ii) - 1))
-def test_yields_hn_m_interp_z_low(m_idx):
+def test_yields_hn_m_interp_z_low(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_hn_ii[m_idx]
     m_high = ms_hn_ii[m_idx + 1]
@@ -1202,7 +1315,7 @@ def test_yields_hn_m_interp_z_low(m_idx):
     ejecta_high = ejecta_table["HN"][min_z][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1218,8 +1331,9 @@ def test_yields_hn_m_interp_z_low(m_idx):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
-def test_yields_winds_lo_m_interp_z_low(m_idx):
+def test_yields_winds_lo_m_interp_z_low(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_winds_lo[m_idx]
     m_high = ms_winds_lo[m_idx + 1]
@@ -1239,7 +1353,7 @@ def test_yields_winds_lo_m_interp_z_low(m_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -1253,8 +1367,9 @@ def test_yields_winds_lo_m_interp_z_low(m_idx):
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
-def test_yields_winds_hi_m_interp_z_low(m_idx):
+def test_yields_winds_hi_m_interp_z_low(core, m_idx):
     # get a random value between two endpoints on the table
     m_low = ms_winds_hi[m_idx]
     m_high = ms_winds_hi[m_idx + 1]
@@ -1274,7 +1389,7 @@ def test_yields_winds_hi_m_interp_z_low(m_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's between the two endpoints
     assert is_between(code_ejecta, ejecta_low, ejecta_high)
@@ -1294,8 +1409,9 @@ def test_yields_winds_hi_m_interp_z_low(m_idx):
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity lines up with the grid, but
 # the mass value is below the minimum modeled mass.
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_agb)
-def test_yields_agb_m_low_z_align(z):
+def test_yields_agb_m_low_z_align(core, z):
     m_min = min(ms_agb)
     # get a random value below the minimum
     m = np.random.uniform(0, m_min, 1)
@@ -1310,7 +1426,7 @@ def test_yields_agb_m_low_z_align(z):
     ejecta_min = ejecta_table["AGB"][z][m_min]
 
     # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -1319,8 +1435,10 @@ def test_yields_agb_m_low_z_align(z):
 
     points_passed["AGB"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_sn_ii)
-def test_yields_sn_ii_m_low_z_align(z):
+def test_yields_sn_ii_m_low_z_align(core, z):
     m_min = min(ms_sn_ii)
     # get a random value below the minimum
     m = np.random.uniform(8, m_min, 1)
@@ -1335,7 +1453,7 @@ def test_yields_sn_ii_m_low_z_align(z):
     ejecta_min = ejecta_table["SN"][z][m_min]
 
     # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_min)):
@@ -1344,10 +1462,36 @@ def test_yields_sn_ii_m_low_z_align(z):
 
     points_passed["SN"].append([m, z])
 
-# HN don't need this test, since their cutoff is their minimum mass
 
+@pytest.mark.parametrize("core", all_cores)
+@pytest.mark.parametrize("z", zs_hn_ii)
+def test_yields_hn_ii_m_low_z_align(core, z):
+    m_min = min(ms_hn_ii)
+    # get a random value below the minimum
+    m = np.random.uniform(18, m_min, 1)
+    assert m < m_min
+
+    # the ejecta will be scaled by the ratio of the masses
+    factor = m / m_min
+
+    points_checked["HN"].append([m, z])
+
+    # get the ejecta at the endpoints
+    ejecta_min = ejecta_table["HN"][z][m_min]
+
+    # and the values the code says for the mass of interest
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
+
+    # iterate through all fields
+    for idx in range(len(ejecta_min)):
+        # the yield will be scaled by the ratio of the masses
+        assert code_ejecta[idx] == pytest.approx(factor * ejecta_min[idx], rel=r_tol, abs=a_tol)
+
+    points_passed["HN"].append([m, z])
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_winds)
-def test_yields_winds_m_low_z_align(z):
+def test_yields_winds_m_low_z_align(core, z):
     m_min = min(ms_winds_lo)
     # get a random value below the minimum. Here we expect all the ejecta to be
     # the same as the minimum mass model
@@ -1362,7 +1506,7 @@ def test_yields_winds_m_low_z_align(z):
     # and the values the code says for the mass of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # The yield should be the same as the minimum mass model
     assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
@@ -1376,8 +1520,9 @@ def test_yields_winds_m_low_z_align(z):
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity lines up with the grid, but
 # the mass value is below the minimum modeled mass.
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_agb)
-def test_yields_agb_m_high_z_align(z):
+def test_yields_agb_m_high_z_align(core, z):
     m_max = max(ms_agb)
     # get a random value above the maximum
     m = np.random.uniform(m_max, 8, 1)
@@ -1392,7 +1537,7 @@ def test_yields_agb_m_high_z_align(z):
     ejecta_max = ejecta_table["AGB"][z][m_max]
 
     # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -1401,8 +1546,10 @@ def test_yields_agb_m_high_z_align(z):
 
     points_passed["AGB"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_sn_ii)
-def test_yields_sn_ii_m_high_z_align(z):
+def test_yields_sn_ii_m_high_z_align(core, z):
     m_max = max(ms_sn_ii)
     # get a random value above the maximum
     m = np.random.uniform(m_max, 50, 1)
@@ -1417,7 +1564,7 @@ def test_yields_sn_ii_m_high_z_align(z):
     ejecta_max = ejecta_table["SN"][z][m_max]
 
     # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -1426,8 +1573,10 @@ def test_yields_sn_ii_m_high_z_align(z):
 
     points_passed["SN"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_hn_ii)
-def test_yields_hn_ii_m_high_z_align(z):
+def test_yields_hn_ii_m_high_z_align(core, z):
     m_max = max(ms_hn_ii)
     # get a random value above the maximum
     m = np.random.uniform(m_max, 50, 1)
@@ -1442,7 +1591,7 @@ def test_yields_hn_ii_m_high_z_align(z):
     ejecta_max = ejecta_table["HN"][z][m_max]
 
     # and the values the code says for the mass of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_max)):
@@ -1452,8 +1601,9 @@ def test_yields_hn_ii_m_high_z_align(z):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", zs_winds)
-def test_yields_winds_hi_m_high_z_align(z):
+def test_yields_winds_hi_m_high_z_align(core, z):
     m_max = max(ms_winds_hi)
     # get a random value above the maximum
     m = np.random.uniform(m_max, 50.05, 1)
@@ -1467,7 +1617,7 @@ def test_yields_winds_hi_m_high_z_align(z):
     # and the values the code says for the mass of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # the yield will be scaled by the fraction of age that has passes
     assert code_ejecta == pytest.approx(ejecta_max * age / age_50, rel=r_tol, abs=a_tol)
@@ -1481,8 +1631,9 @@ def test_yields_winds_hi_m_high_z_align(z):
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity lines up with the grid, but
 # the mass value is below the minimum modeled mass.
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_agb) - 1))
-def test_yields_agb_m_low_z_interp(z_idx):
+def test_yields_agb_m_low_z_interp(core, z_idx):
     # get a random value between two endpoints on the table
     z_low = zs_agb[z_idx]
     z_high = zs_agb[z_idx + 1]
@@ -1504,7 +1655,7 @@ def test_yields_agb_m_low_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["AGB"][z_high][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1518,8 +1669,10 @@ def test_yields_agb_m_low_z_interp(z_idx):
         assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
     points_passed["AGB"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_sn_ii) - 1))
-def test_yields_sn_ii_m_low_z_interp(z_idx):
+def test_yields_sn_ii_m_low_z_interp(core, z_idx):
     # get a random value between two endpoints on the table
     z_low = zs_sn_ii[z_idx]
     z_high = zs_sn_ii[z_idx + 1]
@@ -1541,7 +1694,7 @@ def test_yields_sn_ii_m_low_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["SN"][z_high][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1555,11 +1708,48 @@ def test_yields_sn_ii_m_low_z_interp(z_idx):
         assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
     points_passed["SN"].append([m, z])
 
-# Hypernovae don't need this test, since their cutoff mass is the mass of their
-# smallest model
 
+@pytest.mark.parametrize("core", all_cores)
+@pytest.mark.parametrize("z_idx", range(len(zs_hn_ii) - 1))
+def test_yields_hn_ii_m_low_z_interp(core, z_idx):
+    # get a random value between two endpoints on the table
+    z_low = zs_hn_ii[z_idx]
+    z_high = zs_hn_ii[z_idx + 1]
+    z = np.random.uniform(z_low, z_high, 1)
+    assert z_low < z < z_high
+
+    m_min = min(ms_hn_ii)
+    # get a random value below the minimum
+    m = np.random.uniform(18, m_min, 1)
+    assert m < m_min
+
+    points_checked["HN"].append([m, z])
+
+    # We'll interpolate between these two, then scale by the fractional mass
+    factor = m / m_min
+
+    # get the ejecta at the endpoints
+    ejecta_low = factor * ejecta_table["HN"][z_low][m_min]
+    ejecta_high = factor * ejecta_table["HN"][z_high][m_min]
+
+    # and the values the code says for the metallicity of interest
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
+
+    # iterate through all fields
+    for idx in range(len(ejecta_low)):
+        # first do sanity check that it's between the two endpoints
+        assert is_between(code_ejecta[idx], ejecta_low[idx], ejecta_high[idx])
+
+        # then do the actual interpolation
+        interp = interpolate.interp1d(x=[z_low, z_high],
+                                      y=[ejecta_low[idx], ejecta_high[idx]],
+                                      kind="linear")
+        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+    points_passed["HN"].append([m, z])
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
-def test_yields_winds_lo_m_low_z_interp(z_idx):
+def test_yields_winds_lo_m_low_z_interp(core, z_idx):
     # get a random value between two endpoints on the table
     z_low = zs_winds[z_idx]
     z_high = zs_winds[z_idx + 1]
@@ -1580,7 +1770,7 @@ def test_yields_winds_lo_m_low_z_interp(z_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # The true value should match the value of the interpolated endpoint, since
     # there are no wind after the last mass
@@ -1601,8 +1791,9 @@ def test_yields_winds_lo_m_low_z_interp(z_idx):
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity lines up with the grid, but
 # the mass value is below the minimum modeled mass.
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_agb) - 1))
-def test_yields_agb_m_high_z_interp(z_idx):
+def test_yields_agb_m_high_z_interp(core, z_idx):
     # get a random value between two endpoints on the table
     z_low = zs_agb[z_idx]
     z_high = zs_agb[z_idx + 1]
@@ -1624,7 +1815,7 @@ def test_yields_agb_m_high_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["AGB"][z_high][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1638,8 +1829,10 @@ def test_yields_agb_m_high_z_interp(z_idx):
         assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
     points_passed["AGB"].append([m, z])
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_sn_ii) - 1))
-def test_yields_sn_ii_m_high_z_interp(z_idx):
+def test_yields_sn_ii_m_high_z_interp(core, z_idx):
     # get a random value between two endpoints on the table
     z_low = zs_sn_ii[z_idx]
     z_high = zs_sn_ii[z_idx + 1]
@@ -1661,7 +1854,7 @@ def test_yields_sn_ii_m_high_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["SN"][z_high][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1675,8 +1868,9 @@ def test_yields_sn_ii_m_high_z_interp(z_idx):
         assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
     points_passed["SN"].append([m, z])
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_hn_ii) - 1))
-def test_yields_hn_ii_m_high_z_interp(z_idx):
+def test_yields_hn_ii_m_high_z_interp(core, z_idx):
     # get a random value between two endpoints on the table
     z_low = zs_hn_ii[z_idx]
     z_high = zs_hn_ii[z_idx + 1]
@@ -1698,7 +1892,7 @@ def test_yields_hn_ii_m_high_z_interp(z_idx):
     ejecta_high = factor * ejecta_table["HN"][z_high][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_low)):
@@ -1713,8 +1907,9 @@ def test_yields_hn_ii_m_high_z_interp(z_idx):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
-def test_yields_winds_hi_m_high_z_interp(z_idx):
+def test_yields_winds_hi_m_high_z_interp(core, z_idx):
     # get a random value between two endpoints on the table
     z_low = zs_winds[z_idx]
     z_high = zs_winds[z_idx + 1]
@@ -1735,7 +1930,7 @@ def test_yields_winds_hi_m_high_z_interp(z_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # the yield will be scaled by the fraction of age that has passes
     # first do sanity check that it's between the two endpoints
@@ -1756,7 +1951,8 @@ def test_yields_winds_hi_m_high_z_interp(z_idx):
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity is too high, and
 # the mass value is below the minimum modeled mass.
-def test_yields_agb_m_low_z_high():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_agb_m_low_z_high(core):
     # Then get a metallicity above the maximum value
     max_z = max(zs_agb)
     z = np.random.uniform(max_z, 0.025, 1)
@@ -1776,7 +1972,7 @@ def test_yields_agb_m_low_z_high():
     ejecta_true = factor * ejecta_table["AGB"][max_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1784,7 +1980,9 @@ def test_yields_agb_m_low_z_high():
 
     points_passed["AGB"].append([m, z])
 
-def test_yields_sn_ii_m_low_z_high():
+
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_sn_ii_m_low_z_high(core):
     # Then get a metallicity above the maximum value
     max_z = max(zs_sn_ii)
     z = np.random.uniform(max_z, 0.025, 1)
@@ -1804,7 +2002,7 @@ def test_yields_sn_ii_m_low_z_high():
     ejecta_true = factor * ejecta_table["SN"][max_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1812,10 +2010,38 @@ def test_yields_sn_ii_m_low_z_high():
 
     points_passed["SN"].append([m, z])
 
-# Hypernovae don't need this test, since their cutoff mass is the mass of their
-# smallest model
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_hn_ii_m_low_z_high(core):
+    # Then get a metallicity above the maximum value
+    max_z = max(zs_hn_ii)
+    z = np.random.uniform(max_z, 0.025, 1)
+    assert z > 0.02
 
-def test_yields_winds_lo_m_low_z_high():
+    m_min = min(ms_hn_ii)
+    # get a random value below the minimum
+    m = np.random.uniform(18, m_min, 1)
+    assert m < m_min
+
+    points_checked["HN"].append([m, z])
+
+    # We'll interpolate between these two, then scale by the fractional mass
+    factor = m / m_min
+
+    # get the ejecta at the endpoints
+    ejecta_true = factor * ejecta_table["HN"][max_z][m_min]
+
+    # and the values the code says for the metallicity of interest
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
+
+    # iterate through all fields
+    for idx in range(len(ejecta_true)):
+        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+
+    points_passed["HN"].append([m, z])
+
+
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_winds_lo_m_low_z_high(core):
     # Then get a metallicity above the maximum value
     max_z = max(zs_winds)
     z = np.random.uniform(max_z, 0.025, 1)
@@ -1834,7 +2060,7 @@ def test_yields_winds_lo_m_low_z_high():
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # At late times there are no more ejecta, since winds have stopped, so this
     # should match the endpoint
@@ -1849,7 +2075,8 @@ def test_yields_winds_lo_m_low_z_high():
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity is too low, and
 # the mass value is below the maximum modeled mass.
-def test_yields_agb_m_low_z_low():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_agb_m_low_z_low(core):
     # Then get a metallicity below the minimum value
     min_z = min(zs_agb)
     z = np.random.uniform(-0.005, min_z, 1)
@@ -1869,7 +2096,7 @@ def test_yields_agb_m_low_z_low():
     ejecta_true = factor * ejecta_table["AGB"][min_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1877,7 +2104,9 @@ def test_yields_agb_m_low_z_low():
 
     points_passed["AGB"].append([m, z])
 
-def test_yields_sn_ii_m_low_z_low():
+
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_sn_ii_m_low_z_low(core):
     # Then get a metallicity below the minimum value
     min_z = min(zs_sn_ii)
     z = np.random.uniform(-0.005, min_z, 1)
@@ -1897,7 +2126,7 @@ def test_yields_sn_ii_m_low_z_low():
     ejecta_true = factor * ejecta_table["SN"][min_z][m_min]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1905,11 +2134,39 @@ def test_yields_sn_ii_m_low_z_low():
 
     points_passed["SN"].append([m, z])
 
-# Hypernovae don't need this test, since their cutoff mass is the mass of their
-# smallest model
+
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_hn_ii_m_low_z_low(core):
+    # Then get a metallicity below the minimum value
+    min_z = min(zs_hn_ii)
+    z = np.random.uniform(-0.005, min_z, 1)
+    assert z < min_z
+
+    m_min = min(ms_hn_ii)
+    # get a random value below the minimum
+    m = np.random.uniform(18, m_min, 1)
+    assert m < m_min
+
+    points_checked["HN"].append([m, z])
+
+    # We'll interpolate between these two, then scale by the fractional mass
+    factor = m / m_min
+
+    # get the ejecta at the endpoints
+    ejecta_true = factor * ejecta_table["HN"][min_z][m_min]
+
+    # and the values the code says for the metallicity of interest
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
+
+    # iterate through all fields
+    for idx in range(len(ejecta_true)):
+        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+
+    points_passed["HN"].append([m, z])
 
 
-def test_yields_winds_lo_m_low_z_low():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_winds_lo_m_low_z_low(core):
     # Then get a metallicity above the maximum value
     min_z = min(zs_winds)
     z = np.random.uniform(-0.005, min_z, 1)
@@ -1928,7 +2185,7 @@ def test_yields_winds_lo_m_low_z_low():
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # At late times there are no more ejecta, since winds have stopped, so this
     # should match the endpoint
@@ -1943,7 +2200,8 @@ def test_yields_winds_lo_m_low_z_low():
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity is too low, and
 # the mass value is above the maximum modeled mass.
-def test_yields_agb_m_high_z_low():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_agb_m_high_z_low(core):
     # Then get a metallicity below the minimum value
     min_z = min(zs_agb)
     z = np.random.uniform(-0.005, min_z, 1)
@@ -1963,7 +2221,7 @@ def test_yields_agb_m_high_z_low():
     ejecta_true = factor * ejecta_table["AGB"][min_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -1971,7 +2229,9 @@ def test_yields_agb_m_high_z_low():
 
     points_passed["AGB"].append([m, z])
 
-def test_yields_sn_ii_m_high_z_low():
+
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_sn_ii_m_high_z_low(core):
     # Then get a metallicity below the minimum value
     min_z = min(zs_sn_ii)
     z = np.random.uniform(-0.005, min_z, 1)
@@ -1991,7 +2251,7 @@ def test_yields_sn_ii_m_high_z_low():
     ejecta_true = factor * ejecta_table["SN"][min_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -2000,7 +2260,8 @@ def test_yields_sn_ii_m_high_z_low():
     points_passed["SN"].append([m, z])
 
 
-def test_yields_hn_ii_m_high_z_low():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_hn_ii_m_high_z_low(core):
     # Then get a metallicity below the minimum value
     min_z = min(zs_hn_ii)
     z = np.random.uniform(-0.005, min_z, 1)
@@ -2020,7 +2281,7 @@ def test_yields_hn_ii_m_high_z_low():
     ejecta_true = factor * ejecta_table["HN"][min_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -2029,7 +2290,8 @@ def test_yields_hn_ii_m_high_z_low():
     points_passed["HN"].append([m, z])
 
 
-def test_yields_winds_hi_m_high_z_low():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_winds_hi_m_high_z_low(core):
     # Then get a metallicity below the minimum value
     min_z = min(zs_winds)
     z = np.random.uniform(-0.005, min_z, 1)
@@ -2048,7 +2310,7 @@ def test_yields_winds_hi_m_high_z_low():
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # The ejecta is scaled by the amount of time that's passes
     assert code_ejecta == pytest.approx(ejecta_true * age / age_50, rel=r_tol, abs=a_tol)
@@ -2062,7 +2324,8 @@ def test_yields_winds_hi_m_high_z_low():
 # ------------------------------------------------------------------------------
 # These check the values for when the metallicity is too high, and
 # the mass value is above the maximum modeled mass.
-def test_yields_agb_m_high_z_high():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_agb_m_high_z_high(core):
     # Then get a metallicity above the maximum value
     max_z = max(zs_agb)
     z = np.random.uniform(max_z, 0.025, 1)
@@ -2082,7 +2345,7 @@ def test_yields_agb_m_high_z_high():
     ejecta_true = factor * ejecta_table["AGB"][max_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -2090,7 +2353,9 @@ def test_yields_agb_m_high_z_high():
 
     points_passed["AGB"].append([m, z])
 
-def test_yields_sn_ii_m_high_z_high():
+
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_sn_ii_m_high_z_high(core):
     # Then get a metallicity above the maximum value
     max_z = max(zs_sn_ii)
     z = np.random.uniform(max_z, 0.025, 1)
@@ -2110,7 +2375,7 @@ def test_yields_sn_ii_m_high_z_high():
     ejecta_true = factor * ejecta_table["SN"][max_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -2119,7 +2384,8 @@ def test_yields_sn_ii_m_high_z_high():
     points_passed["SN"].append([m, z])
 
 
-def test_yields_hn_ii_m_high_z_high():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_hn_ii_m_high_z_high(core):
     # Then get a metallicity above the maximum value
     max_z = max(zs_hn_ii)
     z = np.random.uniform(max_z, 0.025, 1)
@@ -2139,7 +2405,7 @@ def test_yields_hn_ii_m_high_z_high():
     ejecta_true = factor * ejecta_table["HN"][max_z][m_max]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
@@ -2148,7 +2414,8 @@ def test_yields_hn_ii_m_high_z_high():
     points_passed["HN"].append([m, z])
 
 
-def test_yields_winds_hi_m_high_z_high():
+@pytest.mark.parametrize("core", all_cores)
+def test_yields_winds_hi_m_high_z_high(core):
     # Then get a metallicity above the maximum value
     max_z = max(zs_winds)
     z = np.random.uniform(max_z, 0.025, 1)
@@ -2167,7 +2434,7 @@ def test_yields_winds_hi_m_high_z_high():
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # The ejecta is scaled by the amount of time that's passes
     assert code_ejecta == pytest.approx(ejecta_true * age / age_50, rel=r_tol, abs=a_tol)
@@ -2198,7 +2465,7 @@ def test_yields_winds_hi_m_high_z_high():
 #     points_checked["AGB"].append([m, z])
 #
 #     # and the values the code says for the mass of interest
-#     code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+#     code_ejecta = core.get_yields_raw_agb_py(z, m)
 #
 #     # iterate through all fields
 #     for idx in range(n_returned_agb):
@@ -2220,7 +2487,7 @@ def test_yields_winds_hi_m_high_z_high():
 #     points_checked["SN"].append([m, z])
 #
 #     # and the values the code says for the mass of interest
-#     code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+#     code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 #
 #     # iterate through all fields
 #     for idx in range(n_returned_sn_ii):
@@ -2242,7 +2509,7 @@ def test_yields_winds_hi_m_high_z_high():
 #     points_checked["HN"].append([m, z])
 #
 #     # and the values the code says for the mass of interest
-#     code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+#     code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 #
 #     # iterate through all fields
 #     for idx in range(n_returned_hn_ii):
@@ -2260,9 +2527,10 @@ def test_yields_winds_hi_m_high_z_high():
 #
 # ------------------------------------------------------------------------------
 # both the quantities need interpolating. This can only be done inside the grid
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_agb) - 1))
 @pytest.mark.parametrize("z_idx", range(len(zs_agb) - 1))
-def test_yields_agb_m_interp_z_interp(m_idx, z_idx):
+def test_yields_agb_m_interp_z_interp(core, m_idx, z_idx):
     # get a random value between two endpoints in mass
     m_low = ms_agb[m_idx]
     m_high = ms_agb[m_idx + 1]
@@ -2284,7 +2552,7 @@ def test_yields_agb_m_interp_z_interp(m_idx, z_idx):
     ejecta_z_high_m_high = ejecta_table["AGB"][z_high][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_agb_py(z, m)
+    code_ejecta = core.get_yields_raw_agb_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_z_low_m_low)):
@@ -2313,9 +2581,10 @@ def test_yields_agb_m_interp_z_interp(m_idx, z_idx):
 
     points_passed["AGB"].append([m, z])
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_sn_ii) - 1))
 @pytest.mark.parametrize("z_idx", range(len(zs_sn_ii) - 1))
-def test_yields_sn_ii_m_interp_z_interp(m_idx, z_idx):
+def test_yields_sn_ii_m_interp_z_interp(core, m_idx, z_idx):
     # get a random value between two endpoints in mass
     m_low = ms_sn_ii[m_idx]
     m_high = ms_sn_ii[m_idx + 1]
@@ -2337,7 +2606,7 @@ def test_yields_sn_ii_m_interp_z_interp(m_idx, z_idx):
     ejecta_z_high_m_high = ejecta_table["SN"][z_high][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_sn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_z_low_m_low)):
@@ -2367,9 +2636,10 @@ def test_yields_sn_ii_m_interp_z_interp(m_idx, z_idx):
     points_passed["SN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_hn_ii) - 1))
 @pytest.mark.parametrize("z_idx", range(len(zs_hn_ii) - 1))
-def test_yields_hn_ii_m_interp_z_interp(m_idx, z_idx):
+def test_yields_hn_ii_m_interp_z_interp(core, m_idx, z_idx):
     # get a random value between two endpoints in mass
     m_low = ms_hn_ii[m_idx]
     m_high = ms_hn_ii[m_idx + 1]
@@ -2391,7 +2661,7 @@ def test_yields_hn_ii_m_interp_z_interp(m_idx, z_idx):
     ejecta_z_high_m_high = ejecta_table["HN"][z_high][m_high]
 
     # and the values the code says for the metallicity of interest
-    code_ejecta = core_elts.get_yields_raw_hn_ii_py(z, m)
+    code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
 
     # iterate through all fields
     for idx in range(len(ejecta_z_low_m_low)):
@@ -2421,9 +2691,10 @@ def test_yields_hn_ii_m_interp_z_interp(m_idx, z_idx):
     points_passed["HN"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_lo) - 1))
 @pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
-def test_yields_winds_lo_m_interp_z_interp(m_idx, z_idx):
+def test_yields_winds_lo_m_interp_z_interp(core, m_idx, z_idx):
     # get a random value between two endpoints in mass
     m_low = ms_winds_lo[m_idx]
     m_high = ms_winds_lo[m_idx + 1]
@@ -2447,7 +2718,7 @@ def test_yields_winds_lo_m_interp_z_interp(m_idx, z_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # do the interpolation in mass first
     interp_z_low = interpolate.interp1d(x=[m_low, m_high],
@@ -2474,9 +2745,10 @@ def test_yields_winds_lo_m_interp_z_interp(m_idx, z_idx):
     points_passed["winds_lo"].append([m, z])
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("m_idx", range(len(ms_winds_hi) - 1))
 @pytest.mark.parametrize("z_idx", range(len(zs_winds) - 1))
-def test_yields_winds_hi_m_interp_z_interp(m_idx, z_idx):
+def test_yields_winds_hi_m_interp_z_interp(core, m_idx, z_idx):
     # get a random value between two endpoints in mass
     m_low = ms_winds_hi[m_idx]
     m_high = ms_winds_hi[m_idx + 1]
@@ -2500,7 +2772,7 @@ def test_yields_winds_hi_m_interp_z_interp(m_idx, z_idx):
     # and the values the code says for the metallicity of interest
     age = lt(m, z)
     age_50 = lt(50.0, z)
-    code_ejecta = core_elts.get_cumulative_mass_winds_py(age, m, z, age_50)
+    code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # do the interpolation in mass first
     interp_z_low = interpolate.interp1d(x=[m_low, m_high],
@@ -2538,17 +2810,20 @@ exact_yields_snia_solar = [0.0475001, 1.10546e-05, 0.0500047, 0.0048054,
                            0.0818503, 0.00969994, 0.899624, 1.37164]
 
 # the yields only depend on metallicity, so we only have to test a few ranges
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", [-0.5, 0, 1E-4, 0.0019999])
-def test_low_metallicity_sn_ia(z):
+def test_low_metallicity_sn_ia(core, z):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = core_elts.get_yields_sn_ia_py(z)
+    yields = core.get_yields_sn_ia_py(z)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_01_solar[idx]
 
+
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", [0.020001, 0.05, 0.5, 1.5])
-def test_low_metallicity_sn_ia(z):
+def test_low_metallicity_sn_ia(core, z):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = core_elts.get_yields_sn_ia_py(z)
+    yields = core.get_yields_sn_ia_py(z)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_solar[idx]
 
@@ -2557,15 +2832,18 @@ def test_low_metallicity_sn_ia(z):
 # Test exact values for SN Ia
 #
 # ------------------------------------------------------------------------------
-def test_exact_low_metallicity_sn_ia():
+@pytest.mark.parametrize("core", all_cores)
+def test_exact_low_metallicity_sn_ia(core):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = core_elts.get_yields_sn_ia_py(0.002)
+    yields = core.get_yields_sn_ia_py(0.002)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_01_solar[idx]
 
-def test_exact_high_metallicity_sn_ia():
+
+@pytest.mark.parametrize("core", all_cores)
+def test_exact_high_metallicity_sn_ia(core):
     """Metallicity less than the minimum should use the yields for minimum z"""
-    yields = core_elts.get_yields_sn_ia_py(0.02)
+    yields = core.get_yields_sn_ia_py(0.02)
     for idx in range(n_elements):
         assert yields[idx] == exact_yields_snia_solar[idx]
 
@@ -2574,10 +2852,11 @@ def test_exact_high_metallicity_sn_ia():
 # Test the range at which we interpolate
 #
 # ------------------------------------------------------------------------------
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("z", [0.006, 0.01])
-def test_interpolate_sn_ia(z):
+def test_interpolate_sn_ia(core, z):
     """Interpolate the SNIa yields"""
-    yields = core_elts.get_yields_sn_ia_py(z)
+    yields = core.get_yields_sn_ia_py(z)
     for idx in range(n_elements):
         interp = interpolate.interp1d(x=[0.002, 0.02],
                                       y=[exact_yields_snia_01_solar[idx],
@@ -2591,48 +2870,93 @@ def test_interpolate_sn_ia(z):
 # direct interpolation checking
 #
 # ------------------------------------------------------------------------------
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("x, x_0, x_1, y_0, y_1, answer",
                          [[2, 2, 2, 5, 5, 5],
                           [2, 1, 3, 4, 4, 4]])
-def test_interpolate_single_value(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
+def test_interpolate_single_value(core, x, x_0, x_1, y_0, y_1, answer):
+    code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("x, x_0, x_1, y_0, y_1, answer",
                          [[2, 2, 4, 4, 6, 4],
                           [3, 1, 3, 0, 8, 8]])
-def test_interpolate_edge_cases(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
+def test_interpolate_edge_cases(core, x, x_0, x_1, y_0, y_1, answer):
+    code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("x, x_0, x_1, y_0, y_1, answer",
                          [[2, 1, 3, 5, 7, 6],
                           [2, 0, 4, 4, 6, 5],
                           [7, 5, 11, 0, 3, 1]])
-def test_interpolate_simple_positive_slope(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
+def test_interpolate_simple_positive_slope(core, x, x_0, x_1, y_0, y_1, answer):
+    code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
+@pytest.mark.parametrize("core", all_cores)
 @pytest.mark.parametrize("x, x_0, x_1, y_0, y_1, answer",
                          [[2, 1, 3, 7, 5, 6],
                           [2, 0, 4, 6, 4, 5],
                           [7, 5, 11, 3, 0, 2]])
-def test_interpolate_simple_negative_slope(x, x_0, x_1, y_0, y_1, answer):
-    code_answer = core_elts.interpolate_py(x, x_0, x_1, y_0, y_1)
+def test_interpolate_simple_negative_slope(core, x, x_0, x_1, y_0, y_1, answer):
+    code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
     assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
 
+@pytest.mark.parametrize("core", all_cores)
+@pytest.mark.parametrize("m,m_edge,value_edge,answer",
+                        [[5, 10, 10, 5],
+                         [1, 3, 15, 5],
+                         [0.1, 0.5, 1.5, 0.3],
+                         [7.0, 8.0, 80.0, 70.0]])
+def test_extrapolate_m_low(core, m, m_edge, value_edge, answer):
+    code_answer = core.extrapolate_py(m, m_edge, value_edge)
+    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
 
+
+@pytest.mark.parametrize("core", all_cores)
+@pytest.mark.parametrize("m,m_edge,value_edge,answer",
+                        [[15, 10, 10, 15],
+                         [12, 10, 5, 6],
+                         [50.0, 40.0, 80.0, 100.0],
+                         [8.0, 7.0, 70.0, 80.0]])
+def test_extrapolate_m_high(core, m, m_edge, value_edge, answer):
+    code_answer = core.extrapolate_py(m, m_edge, value_edge)
+    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
+
+
+# ------------------------------------------------------------------------------
+#
+# IMF integration
+#
+# ------------------------------------------------------------------------------
+# Here I'll compare my analytic integral with the integral from scipy
+@pytest.mark.parametrize("core", all_cores)
+@pytest.mark.parametrize("m_low", np.random.uniform(0.08, 50.0, 50))
+def test_integrate_imf(core, m_low):
+    m_high = np.random.uniform(m_low, 50.0, 1)
+    c_integral = core.imf_integral_py(m_low, m_high)
+    py_integral = integrate.quad(imf.normalized_dn_dm, m_low, m_high)
+    abs_tol = max(1E-10, py_integral[1])
+    assert c_integral == pytest.approx(py_integral[0], rel=1E-8, abs=abs_tol)
+
+
+# ------------------------------------------------------------------------------
+#
 # Then make plots showing what I checked
+#
+# ------------------------------------------------------------------------------
 @pytest.fixture(scope="session", autouse=True)
 def plot_points():
+    fig, axs = bpl.subplots(figsize=[15, 18], ncols=2, nrows=3)
+    axs = axs.flatten()
     yield True  # to make the rest of the code run at teardown
-    for source in ["AGB", "SN", "HN", "winds_lo", "winds_hi"]:
-        fig, ax = bpl.subplots()
-
+    for source, ax in zip(["AGB", "SN", "HN", "winds_lo", "winds_hi"], axs):
         if source == "winds_lo":
             ms_grid = ms_winds_lo
             zs_grid = sorted(list(ejecta_table["winds"].keys()))
@@ -2644,33 +2968,41 @@ def plot_points():
             ms_grid = ejecta_table[source][zs_grid[0]].keys()
 
         for m in ms_grid:
-            ax.axvline(m, lw=0.5, c=bpl.almost_black, ls=":")
+            ax.axvline(m, lw=1, c=bpl.almost_black, ls=":")
             for z in zs_grid:
-                ax.axhline(z, lw=0.5, c=bpl.almost_black, ls=":")
                 ax.scatter(m, z, s=100, facecolor="none", color="k", zorder=0)
+        for z in zs_grid:
+            ax.axhline(z, lw=1, c=bpl.almost_black, ls=":")
+
 
         points_failed = [item for item in points_checked[source] if
                          item not in points_passed[source]]
         ms = [item[0] for item in points_failed]
         zs = [item[1] for item in points_failed]
-        ax.scatter(ms, zs, s=20, c="firebrick", zorder=5, linewidth=0)
+        ax.scatter(ms, zs, s=40, c="firebrick", zorder=5, linewidth=0)
 
         ms = [item[0] for item in points_passed[source]]
         zs = [item[1] for item in points_passed[source]]
-        ax.scatter(ms, zs, s=10, color="forestgreen",
+        ax.scatter(ms, zs, s=20, color="forestgreen",
                    linewidth=0, zorder=4)
 
-        if source == "AGB":
-            ax.axvline(0, lw=0.5, ls='-')
-            ax.axvline(8.0, lw=0.5, ls='-')
-        elif source == "SN":
-            ax.axvline(8.0, lw=0.5, ls='-')
-            ax.axvline(50.0, lw=0.5, ls='-')
-        elif source == "HN":
-            ax.axvline(20.0, lw=0.5, ls='-')
-            ax.axvline(50.0, lw=0.5, ls='-')
+        # if source == "AGB":
+        #     ax.axvline(0, lw=0.5, ls='-')
+        #     ax.axvline(8.0, lw=0.5, ls='-')
+        # elif source == "SN":
+        #     ax.axvline(8.0, lw=0.5, ls='-')
+        #     ax.axvline(50.0, lw=0.5, ls='-')
+        # elif source == "HN":
+        #     ax.axvline(20.0, lw=0.5, ls='-')
+        #     ax.axvline(50.0, lw=0.5, ls='-')
 
-        ax.add_labels("Stellar Mass [$M_\odot$]", "Metallicity")
+        if "winds" in source:
+            title = "Winds"
+        else:
+            title = source
+        ax.add_labels("Stellar Mass [$M_\odot$]", "Metallicity", title)
+        ax.set_limits(y_min=-0.005, y_max=0.025)
 
-        plot_loc = this_dir.parent/"plots/grid_{}_checked.pdf".format(source)
-        fig.savefig(str(plot_loc))
+    axs[-1].set_axis_off()
+    plot_loc = this_dir.parent/"plots/grids_checked.png"
+    fig.savefig(str(plot_loc))
