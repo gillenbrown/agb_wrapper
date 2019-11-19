@@ -9,16 +9,16 @@ dir = "/Users/gillenb/code/art_cluster/src/sf/models/"
 # issues in the full ART compilation. I don't want to risk that. It gets
 # included below anyway.
 
-defines_enrich_ia_elts_cluster_discrete = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS", "CLUSTER", "DISCRETE_SN"]
-defines_enrich_ia_elts_cluster = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS", "CLUSTER"]
-defines_enrich_ia_elts_discrete = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS", "DISCRETE_SN"]
-defines_enrich_ia_elts = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS"]
-defines_enrich_ia_discrete = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "DISCRETE_SN"]
-defines_enrich_ia = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa"]
-defines_enrich_discrete = ["PY_TESTING", "ENRICHMENT", "DISCRETE_SN"]
-defines_enrich = ["PY_TESTING", "ENRICHMENT"]
-defines_discrete = ["PY_TESTING", "DISCRETE_SN"]
-defines_none = ["PY_TESTING"]
+defines_enrich_ia_elts_cluster_discrete = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS", "CLUSTER", "DISCRETE_SN", "STAR_FORMATION"]
+defines_enrich_ia_elts_cluster = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS", "CLUSTER", "STAR_FORMATION"]
+defines_enrich_ia_elts_discrete = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS", "DISCRETE_SN", "STAR_FORMATION"]
+defines_enrich_ia_elts = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "ENRICHMENT_ELEMENTS", "STAR_FORMATION"]
+defines_enrich_ia_discrete = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "DISCRETE_SN", "STAR_FORMATION"]
+defines_enrich_ia = ["PY_TESTING", "ENRICHMENT", "ENRICHMENT_SNIa", "STAR_FORMATION"]
+defines_enrich_discrete = ["PY_TESTING", "ENRICHMENT", "DISCRETE_SN", "STAR_FORMATION"]
+defines_enrich = ["PY_TESTING", "ENRICHMENT", "STAR_FORMATION"]
+defines_discrete = ["PY_TESTING", "DISCRETE_SN", "STAR_FORMATION"]
+defines_none = ["PY_TESTING", "STAR_FORMATION"]
 
 def build_extension(cdef, include_str, name, defines, sources, need_gsl=False):
     ffibuilder = FFI()
