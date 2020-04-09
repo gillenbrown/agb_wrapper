@@ -34,11 +34,11 @@ lt = tabulation.Lifetimes("Raiteri_96")
 
 # we want the possibility of having many timesteps to check against
 dts = [10**(np.random.uniform(2, 3, 1)[0]), 10**(np.random.uniform(3, 6, 1)[0])]
-dms = np.random.uniform(0.1, 10, 2)
-ages = np.random.uniform(60E6, 14E9, 2)
-m_clusters = 10**np.random.uniform(3, 8, 2)
-m_stellars = np.random.uniform(7.5, 50.5, 2)
-zs = 10**np.random.uniform(-3, np.log10(0.05), 2)
+dms = np.random.uniform(0.1, 10, 3)
+ages = np.random.uniform(60E6, 14E9, 3)
+m_clusters = 10**np.random.uniform(3, 8, 3)
+m_stellars = np.random.uniform(7.5, 50.5, 3)
+zs = 10**np.random.uniform(-3, np.log10(0.05), 3)
 
 @pytest.mark.parametrize("m_star", m_stellars)
 @pytest.mark.parametrize("z", zs)
@@ -77,16 +77,17 @@ def test_compare_elts_no_elts_timestep(m_now, z, m_cluster, wind):
 
 # ==============================================================================
 #
-# Now that we know all variations are behaving the same we can just teset
-# the default one
+# Much of the functionality was tested in the core tests, so not too much to
+# test here
 #
 # ==============================================================================
 @pytest.mark.parametrize("z", zs)
 @pytest.mark.parametrize("m_now", m_stellars)
 @pytest.mark.parametrize("m_cluster", m_clusters)
-def test_winds_calculation(z, m_now, m_cluster):
+@pytest.mark.parametrize("wind", all_winds)
+def test_winds_calculation(z, m_now, m_cluster, wind):
     # Check that the subtraction is happening as expected
-    func = wind_default.get_ejecta_winds_py
+    func = wind.get_ejecta_winds_py
     age_50 = lt.lifetime(50.0, z)
     m_next = np.random.uniform(7.5, m_now, 1)
 
@@ -102,15 +103,20 @@ def test_winds_calculation(z, m_now, m_cluster):
     assert ejecta_test == pytest.approx(ejecta_true, rel=1E-8, abs=1E-15)
 
 @pytest.mark.parametrize("m_cluster", m_clusters)
-@pytest.mark.parametrize("z", [0.02, 0.01, 0.004, 0.001, 0.0005, 0.0001, 0])
+@pytest.mark.parametrize("z", [0.03, 0.02, 0.015, 0.01, 0.004, 0.001, 0.0005,
+                               0.0001, 0])
 def test_winds_conservation(m_cluster, z):
     # Check that the total ejecta is the same regardless of how its split up
-    # into individual timesteps
+    # into individual timesteps. This is slow, so we only test it on the
+    # default (which is fine because we've already validated that they're all
+    # the same
     func = wind_default.get_ejecta_winds_py
     age_50 = lt.lifetime(50.0, z)
     lt_old = lt.lifetime(7, z)
 
-    ages = np.linspace(0, lt_old, 100)
+    ages = sorted(np.concatenate([[0],
+                                  np.random.uniform(0, lt_old, 100),
+                                  [lt_old]]))
     masses = [lt.turnoff_mass(a, z) for a in ages]
     cumulative_ejecta = 0
     for idx in range(len(ages) - 1):

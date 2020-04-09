@@ -104,7 +104,6 @@ if "snia" in sys.argv:
 snii_cdef = """
 void detailed_enrichment_init(void);  // from core file
 void init_rand(void);
-int random_binomial_py(double, unsigned int);
 double hn_energy_py(double);
 double *get_ejecta_sn_ii_py(double, double, double, double, double);
 """

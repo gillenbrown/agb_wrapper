@@ -110,10 +110,9 @@ def test_number_sn_ejected_discrete(n_sn_left, age, dt, m, z, snia):
     t_start = lt.lifetime(8.0, z)
     yields = snia.sn_ia_core_py(n_sn_left, age, dt, m, z, t_start)
     this_e = yields[idxs["E"]]
-    # get the remainder when we divide by the energy of 1 SN
-    remainder = this_e % E_0
-    assert remainder == pytest.approx(0, abs=1E47, rel=0) or \
-           remainder == pytest.approx(E_0, abs=0, rel=1E-5)
+    # get the number of supernovae
+    n_sn = this_e / E_0
+    assert int(n_sn) == pytest.approx(n_sn, abs=0, rel=1E-10)
 
 @pytest.mark.parametrize("age", ages)
 @pytest.mark.parametrize("dt", dts)
@@ -126,10 +125,9 @@ def test_number_sn_ejected_continuous_not_discrete(age, dt, m, z, snia):
     t_start = lt.lifetime(8.0, z)
     yields = snia.sn_ia_core_py(0, age, dt, m, z, t_start)
     this_e = yields[idxs["E"]]
-    # get the remainder when we divide by the energy of 1 SN
-    remainder = this_e % E_0
-    assert remainder != pytest.approx(0, abs=1, rel=0) and \
-           remainder != pytest.approx(E_0, abs=0, rel=1E-10)
+    # get the number of supernovae
+    n_sn = this_e / E_0
+    assert int(n_sn) != pytest.approx(n_sn, abs=0, rel=1E-10)
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("age", ages)
@@ -208,6 +206,27 @@ def test_discrete_continuous_close_leftover(n_sn_left, age, dt, m, z, snia_c, sn
     n_sn_d = yields_d[idxs["E"]] / E_0
 
     assert -1.0 < n_sn_c - n_sn_d < 1.0
+
+@pytest.mark.parametrize("age", ages)
+@pytest.mark.parametrize("dt", dts)
+@pytest.mark.parametrize("m", ms)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snia_c", snias_continuous)
+@pytest.mark.parametrize("snia_d", snias_discrete)
+def test_discrete_continuous_difference(age, dt, m, z, snia_c, snia_d):
+    # check that the difference between discrete and continuous matches the
+    # leftovers in the discrete prescription
+
+    t_start = lt.lifetime(8.0, z)
+    yields_c = snia_c.sn_ia_core_py(0, age, dt, m, z, t_start)
+    yields_d = snia_d.sn_ia_core_py(0, age, dt, m, z, t_start)
+
+    n_sn_c = yields_c[idxs["E"]] / E_0
+    n_sn_d = yields_d[idxs["E"]] / E_0
+
+    leftover = yields_d[idxs["N_SN_left"]]
+
+    assert n_sn_d + leftover == pytest.approx(n_sn_c, abs=atol, rel=rtol)
 
 # ------------------------------------------------------------------------------
 #

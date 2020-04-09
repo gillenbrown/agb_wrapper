@@ -2943,7 +2943,7 @@ def test_integrate_imf(core, m_low):
     c_integral = core.imf_integral_py(m_low, m_high)
     py_integral = integrate.quad(imf.normalized_dn_dm, m_low, m_high)
     abs_tol = max(1E-10, py_integral[1])
-    assert c_integral == pytest.approx(py_integral[0], rel=1E-8, abs=abs_tol)
+    assert c_integral == pytest.approx(py_integral[0], rel=1E-7, abs=abs_tol)
 
 
 # ------------------------------------------------------------------------------
