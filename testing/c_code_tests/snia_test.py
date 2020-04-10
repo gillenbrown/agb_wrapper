@@ -112,7 +112,7 @@ def test_number_sn_ejected_discrete(n_sn_left, age, dt, m, z, snia):
     this_e = yields[idxs["E"]]
     # get the number of supernovae
     n_sn = this_e / E_0
-    assert int(n_sn) == pytest.approx(n_sn, abs=0, rel=1E-10)
+    assert int(n_sn) == pytest.approx(n_sn, abs=1E-10, rel=0)
 
 @pytest.mark.parametrize("age", ages)
 @pytest.mark.parametrize("dt", dts)
@@ -127,7 +127,7 @@ def test_number_sn_ejected_continuous_not_discrete(age, dt, m, z, snia):
     this_e = yields[idxs["E"]]
     # get the number of supernovae
     n_sn = this_e / E_0
-    assert int(n_sn) != pytest.approx(n_sn, abs=0, rel=1E-10)
+    assert int(n_sn) != pytest.approx(n_sn, abs=1E-10, rel=0)
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("age", ages)

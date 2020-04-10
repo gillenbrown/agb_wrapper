@@ -31,9 +31,200 @@ sniis_all = sniis_continuous + sniis_discrete
 core.detailed_enrichment_init()
 for snii in sniis_all:
     snii.detailed_enrichment_init()
+    snii.init_rand()
 
+# set up indices for accessing the results of the SNII calculations
+idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "Z": 7,
+        "total": 8, "E": 9, "N_SN": 10, "N_SN_left": 11}
+
+# tolerances for tests
+rtol = 1E-5
+atol = 0
+
+# energy per SN
+E_0 = 1E51
+
+# initialize lifetimes
+lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50)
 
+# we want the possibility of having many timesteps to check against
+m_stars_1 = np.concatenate([np.random.uniform(9, 20, 2),
+                            np.random.uniform(20, 50, 3)])
+m_clusters = 10 ** np.random.uniform(3, 8, 2)
+zs = 10**np.random.uniform(-3, np.log10(0.05), 2)
+n_sn_lefts = np.random.uniform(0, 1, 2)
+
+def m2(m1):
+    return np.random.uniform(8, m1, 1)[0]  # m2 < m1
+
+# ------------------------------------------------------------------------------
+#
+# Number of supernovae and leftover SN
+#
+# ------------------------------------------------------------------------------
+# simple check that rates are zero before time starts
+@pytest.mark.parametrize("snii", sniis_all)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+def test_rate_zero_early_times(snii, z, m_cluster):
+    for m1 in np.random.uniform(50, 200, 100):
+        m2 = np.random.uniform(50, m1, 1)[0]  # m2 < m1
+        ejecta = snii.get_ejecta_sn_ii_py(0, m1, m2, m_cluster, z)
+        for idx in idxs.values():
+            assert 0 == ejecta[idx]
+
+# simple check that rates are zero at late times
+@pytest.mark.parametrize("snii", sniis_all)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+def test_rate_zero_late_times(snii, z, m_cluster):
+    for m1 in np.random.uniform(5, 8, 100):
+        m2 = np.random.uniform(5, m1, 1)[0]  # m2 < m1
+        ejecta = snii.get_ejecta_sn_ii_py(0, m1, m2, m_cluster, z)
+        for idx in idxs.values():
+            assert 0 == ejecta[idx]
+
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+def test_number_sn_ejected_discrete(n_sn_left, m1, m_cluster, z, snii):
+    # Discrete SN should have an integer number of SN
+    ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, m2(m1), m_cluster, z)
+    n_sn = ejecta[idxs['N_SN']]
+    assert int(n_sn) == pytest.approx(n_sn, abs=1E-10, rel=0)
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_continuous)
+def test_number_sn_ejected_continuous(m1, m_cluster, z, snii):
+    # Continuous SN should not have an integer number of SN
+    ejecta = snii.get_ejecta_sn_ii_py(0, m1, m2(m1), m_cluster, z)
+    n_sn = ejecta[idxs['N_SN']]
+    assert int(n_sn) != pytest.approx(n_sn, abs=1E-10, rel=0)
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_continuous)
+def test_number_of_sn_from_imf_continuous(m1, m_cluster, z, snii):
+    # check that the number of SN in the continuous case matches what we expect
+    # from the IMF exactly
+    this_m2 = m2(m1)
+
+    n_sn_true = integrate.quad(imf.normalized_dn_dm, this_m2, m1)[0] * m_cluster
+    ejecta = snii.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    n_sn_test = ejecta[idxs['N_SN']]
+
+    assert n_sn_test == pytest.approx(n_sn_true, abs=atol, rel=rtol)
+
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+def test_number_of_sn_from_imf_discrete(n_sn_left, m1, m_cluster, z, snii):
+    # check that the number of SN in the discrete case matches what we expect
+    # from the IMF. Here we check whether we're within 1 of the correct answer.
+    # we also add the leftovers to make sure they contribute to the total
+    this_m2 = m2(m1)
+
+    n_sn_true = integrate.quad(imf.normalized_dn_dm, this_m2, m1)[0] * m_cluster
+    n_sn_true += n_sn_left
+    ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+    n_sn_test = ejecta[idxs['N_SN']]
+    n_leftover = ejecta[idxs["N_SN_left"]]
+
+    assert n_sn_test == pytest.approx(n_sn_true, abs=1, rel=0)
+    assert n_sn_test + n_leftover == pytest.approx(n_sn_true, abs=atol, rel=rtol)
+
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii_d", sniis_discrete)
+@pytest.mark.parametrize("snii_c", sniis_continuous)
+def test_number_of_sn_discrete_continuous_close(m1, m_cluster, z, snii_c, snii_d):
+    # continuous and discrete SN should always be within 1 for N_SN. Here
+    # we assume 0 leftover SN, so that continuous should always be larger
+    # than discrete
+    this_m2 = m2(m1)
+
+    ejecta_c = snii_c.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    ejecta_d = snii_d.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+
+    n_sn_c = ejecta_c[idxs['N_SN']]
+    n_sn_d = ejecta_d[idxs['N_SN']]
+
+    assert 0 <= n_sn_c - n_sn_d < 1.0
+
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii_d", sniis_discrete)
+@pytest.mark.parametrize("snii_c", sniis_continuous)
+def test_number_of_sn_discrete_continuous_close_leftover(n_sn_left, m1, m_cluster, z, snii_c, snii_d):
+    # continuous and discrete SN should always be within 1 for N_SN. Here
+    # we assume nonzero leftover SN, so that either could be larger
+    this_m2 = m2(m1)
+
+    ejecta_c = snii_c.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    ejecta_d = snii_d.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+
+    n_sn_c = ejecta_c[idxs['N_SN']]
+    n_sn_d = ejecta_d[idxs['N_SN']]
+
+    assert -1.0 < n_sn_c - n_sn_d < 1.0
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii_d", sniis_discrete)
+@pytest.mark.parametrize("snii_c", sniis_continuous)
+def test_number_of_sn_discrete_continuous_difference(m1, m_cluster, z, snii_c, snii_d):
+    # check that the difference between discrete and continuous matches the
+    # leftovers in the discrete prescription
+    this_m2 = m2(m1)
+
+    ejecta_c = snii_c.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    ejecta_d = snii_d.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+
+    n_sn_c = ejecta_c[idxs['N_SN']]
+    n_sn_d = ejecta_d[idxs['N_SN']]
+    leftover = ejecta_d[idxs["N_SN_left"]]
+
+    assert n_sn_d + leftover == pytest.approx(n_sn_c, abs=atol, rel=rtol)
+
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+def test_reasonable_leftover_sn_discrete(n_sn_left, m1, m_cluster, z, snii):
+    # The number of leftover supernovae should be between zero and one
+    ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, m2(m1), m_cluster, z)
+    leftover = ejecta[idxs['N_SN_left']]
+    assert 0 < leftover < 1
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_continuous)
+def test_reasonable_leftover_sn_continuous(m1, m_cluster, z, snii):
+    # continuous SN should have no leftover SN
+    ejecta = snii.get_ejecta_sn_ii_py(0, m1, m2(m1), m_cluster, z)
+    leftover = ejecta[idxs['N_SN_left']]
+    assert 0 == leftover
+
+# ------------------------------------------------------------------------------
+#
+# Energy injection
+#
+# ------------------------------------------------------------------------------
 
 @pytest.mark.parametrize("m_star,true_energy", [[0, 1E52],
                                                 [19, 1E52],
@@ -57,35 +248,187 @@ imf = tabulation.IMF("Kroupa", 0.08, 50)
                                                 [100, 3E52]])
 @pytest.mark.parametrize("snii", sniis_all)
 def test_hn_energy(snii, m_star, true_energy):
-    # should be the same at all times, masses, metallicities
-    # will compare to default value
     test_energy = snii.hn_energy_py(m_star)
     assert test_energy == pytest.approx(true_energy, abs=0, rel=1E-10)
 
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
 @pytest.mark.parametrize("snii", sniis_continuous)
-@pytest.mark.parametrize("m_1,m_2", [[8.0, 19.0],
-                                     [9.0, 10.0],
-                                     [19.0, 20.0],
-                                     [20.0, 21.0],
-                                     [24.0, 25.0],
-                                     [21.0, 50.0]])
-def test_continuous_energy_timestep(snii, m_1, m_2):
-    """m1 and m2 here have to be close, since in my implementation there is only
-    one supernova energy per timestep. """
-    sn_ejecta = snii.get_ejecta_sn_ii_py(0, m_2, m_1, 1.0, 0.02)
-    n_sn = sn_ejecta[10]
+def test_energy_continuous(snii, m1, m_cluster, z):
+    # continuous SN can be tested in a given timestep, since there is no
+    # stochasticity in the SN yields
+    this_m2 = m2(m1)
 
-    mass = 0.5 * (m_1 + m_2)
-    energy_sn = 1E51
+    sn_ejecta = snii.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    n_sn = sn_ejecta[idxs["N_SN"]]
+
+    assert n_sn > 0
+
+    # get the energy at the mass leaving halfway through the timestep
+    # if we have HN, the energy is weighted exactly halfway between the two
+    mass = 0.5 * (m1 + this_m2)
     if mass > 20.0:
         energy_hn = snii.hn_energy_py(mass)
-        energy = 0.5 * energy_sn + 0.5 * energy_hn
+        energy = 0.5 * E_0 + 0.5 * energy_hn
     else:
-        energy = energy_sn
+        energy = E_0
 
     true_E = n_sn * energy
-    test_E = sn_ejecta[9]
+    test_E = sn_ejecta[idxs["E"]]
 
     assert pytest.approx(true_E, abs=0, rel=1E-5) == test_E
 
-# test n_sn_continuous
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+def test_energy_discrete(n_sn_left, m1, m_cluster, z, snii):
+    # Discrete SN is much more difficult to test. What we can do instead it to
+    # use the number of SN to validate that there is at least one combination
+    # of SN and HN that replicates the energy injected
+    n_sn_total = 0
+    while n_sn_total == 0:
+        this_m2 = m2(m1)
+        sn_ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+        n_sn_total = int(sn_ejecta[idxs["N_SN"]])
+    ejected_E = sn_ejecta[idxs["E"]]
+
+    # get the energy at the mass leaving halfway through the timestep
+    mass = 0.5 * (m1 + this_m2)
+    if mass > 20.0:  # we have HN
+        # here's we'll try out all combos of SN and HN to see if any of them
+        # produce the energy output. We have to do this because the specific
+        # number of SN or HN is sampled from a binomial distribution
+        match = False
+        energy_hn = snii.hn_energy_py(mass)
+        for n_hn in range(n_sn_total+1):  # need to include an all HN iteration
+            n_sn = n_sn_total - n_hn
+
+            this_E = n_sn * E_0 + n_hn * energy_hn
+            if this_E == pytest.approx(ejected_E, abs=0, rel=1E-5):
+                match = True
+                break
+
+        assert match
+    else:  # just regular SN, easy to check
+        true_E = n_sn_total * E_0
+        assert ejected_E == pytest.approx(true_E, abs=0, rel=1E-5)
+
+# ------------------------------------------------------------------------------
+#
+# Elemental yields
+#
+# ------------------------------------------------------------------------------
+elts = ["C", "N", "O", "Mg", "S", "Ca", "Fe", "Z", "total"]
+
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+@pytest.mark.parametrize("elt", elts)
+def test_yields_discrete(n_sn_left, m1, m_cluster, z, snii, elt):
+    # check the individual yields, which we do by comparing to the yield table
+    # which we've already validated. Discrete has to do the thing to see how
+    # many SN and HN there are
+    n_sn_total = 0
+    while n_sn_total == 0:
+        this_m2 = m2(m1)
+        sn_ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+        n_sn_total = int(sn_ejecta[idxs["N_SN"]])
+    ejected_E = sn_ejecta[idxs["E"]]
+
+    # get the energy at the mass leaving halfway through the timestep
+    mass = 0.5 * (m1 + this_m2)
+    if mass > 20.0:  # we have HN
+        # here's we'll try out all combos of SN and HN to see if any of them
+        # produce the energy output. We have to do this because the specific
+        # number of SN or HN is sampled from a binomial distribution
+        energy_hn = snii.hn_energy_py(mass)
+        for n_hn in range(n_sn_total + 1): # need to include an all HN iteration
+            n_sn = n_sn_total - n_hn
+            this_E = n_sn * E_0 + n_hn * energy_hn
+            if this_E == pytest.approx(ejected_E, abs=0, rel=1E-5):
+                break
+    else:  # just regular SN, easy to check
+        n_sn = n_sn_total
+        n_hn = 0
+
+    true_yields_per_sn = core.get_yields_raw_sn_ii_py(z, mass)
+    true_yields_per_hn = core.get_yields_raw_hn_ii_py(z, mass)
+
+    test_yield = sn_ejecta[idxs[elt]]
+    true_yield = n_sn * true_yields_per_sn[idxs[elt]] + \
+                 n_hn * true_yields_per_hn[idxs[elt]]
+
+    assert test_yield == pytest.approx(true_yield, abs=atol, rel=rtol)
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_continuous)
+@pytest.mark.parametrize("elt", elts)
+def test_yields_continuous(snii, m1, m_cluster, z, elt):
+    this_m2 = m2(m1)
+    sn_ejecta = snii.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    n_sn_total = sn_ejecta[idxs["N_SN"]]
+
+    assert n_sn_total > 0
+
+    # get the energy at the mass leaving halfway through the timestep
+    # if we have HN, the energy is weighted exactly halfway between the two
+    mass = 0.5 * (m1 + this_m2)
+
+    if mass > 20:
+        n_hn = 0.5 * n_sn_total
+        n_sn = n_hn
+    else:
+        n_sn = n_sn_total
+        n_hn = 0
+
+    true_yields_per_sn = core.get_yields_raw_sn_ii_py(z, mass)
+    true_yields_per_hn = core.get_yields_raw_hn_ii_py(z, mass)
+
+    test_yield = sn_ejecta[idxs[elt]]
+    true_yield = n_sn * true_yields_per_sn[idxs[elt]] + \
+                 n_hn * true_yields_per_hn[idxs[elt]]
+
+    assert test_yield == pytest.approx(true_yield, abs=atol, rel=rtol)
+
+# ------------------------------------------------------------------------------
+#
+# Test that there is no difference amongst the discrete and among the
+# continuous. We'll compare to the one with all defines
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+def test_consistency_discrete(n_sn_left, m1, m_cluster, z, snii):
+    # this does not work if there are hypernovae, unfortunately, since there is
+    # randomness there
+    if m1 > 20:
+        m1 = np.random.uniform(9, 20, 1)[0]
+    this_m2 = m2(m1)
+    sn_ejecta_test =        snii.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+    sn_ejecta_ref = snii_default.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+
+    for idx in idxs.values():
+        assert sn_ejecta_test[idx] == pytest.approx(sn_ejecta_ref[idx], abs=atol, rel=rtol)
+
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_continuous)
+def test_consistency_continuous(m1, m_cluster, z, snii):
+    this_m2 = m2(m1)
+    sn_ejecta_test =          snii.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    sn_ejecta_ref = snii_e_i_e_c_c.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+
+    for idx in idxs.values():
+        assert sn_ejecta_test[idx] == pytest.approx(sn_ejecta_ref[idx], abs=atol, rel=rtol)
