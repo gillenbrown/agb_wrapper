@@ -1,7 +1,7 @@
 import pytest
 
 import numpy as np
-from scipy import integrate
+from scipy import integrate, interpolate
 
 import tabulation
 
@@ -225,6 +225,21 @@ def test_reasonable_leftover_sn_continuous(m1, m_cluster, z, snii):
 # Energy injection
 #
 # ------------------------------------------------------------------------------
+def supernova_partition(energy, total_n_sn, sn_mass):
+    # here's we'll try out all combos of SN and HN to see if any of them
+    # produce the energy output. We have to do this because the specific
+    # number of SN or HN is sampled from a binomial distribution
+    hn_energy = snii.hn_energy_py(sn_mass)
+
+    for n_hn in range(total_n_sn + 1):  # need to include an all HN iteration
+        n_sn = total_n_sn - n_hn
+        this_E = n_sn * E_0 + n_hn * hn_energy
+        if this_E == pytest.approx(energy, abs=0, rel=1E-5):
+            return n_sn, n_hn
+
+    # if we got here we did not find a match
+    assert False
+
 
 @pytest.mark.parametrize("m_star,true_energy", [[0, 1E52],
                                                 [19, 1E52],
@@ -250,6 +265,18 @@ def test_reasonable_leftover_sn_continuous(m1, m_cluster, z, snii):
 def test_hn_energy(snii, m_star, true_energy):
     test_energy = snii.hn_energy_py(m_star)
     assert test_energy == pytest.approx(true_energy, abs=0, rel=1E-10)
+
+@pytest.mark.parametrize("snii", sniis_all)
+@pytest.mark.parametrize("m_star", np.random.uniform(20, 50, 10))
+def test_hn_energy_full(snii, m_star):
+    interp = interpolate.interp1d(x=[20, 25, 30, 40],
+                                  y=[10E51, 10E51, 20E51, 30E51],
+                                  kind="linear", bounds_error=False,
+                                  fill_value=(10E51, 30E51))
+
+    test_energy = snii.hn_energy_py(m_star)
+    true_energy = interp(m_star)
+    assert test_energy == pytest.approx(true_energy)
 
 @pytest.mark.parametrize("m1", m_stars_1)
 @pytest.mark.parametrize("m_cluster", m_clusters)
@@ -298,20 +325,8 @@ def test_energy_discrete(n_sn_left, m1, m_cluster, z, snii):
     # get the energy at the mass leaving halfway through the timestep
     mass = 0.5 * (m1 + this_m2)
     if mass > 20.0:  # we have HN
-        # here's we'll try out all combos of SN and HN to see if any of them
-        # produce the energy output. We have to do this because the specific
-        # number of SN or HN is sampled from a binomial distribution
-        match = False
-        energy_hn = snii.hn_energy_py(mass)
-        for n_hn in range(n_sn_total+1):  # need to include an all HN iteration
-            n_sn = n_sn_total - n_hn
-
-            this_E = n_sn * E_0 + n_hn * energy_hn
-            if this_E == pytest.approx(ejected_E, abs=0, rel=1E-5):
-                match = True
-                break
-
-        assert match
+        supernova_partition(ejected_E, n_sn_total, mass)
+        # this will assert False if it cannot be done
     else:  # just regular SN, easy to check
         true_E = n_sn_total * E_0
         assert ejected_E == pytest.approx(true_E, abs=0, rel=1E-5)
@@ -343,15 +358,7 @@ def test_yields_discrete(n_sn_left, m1, m_cluster, z, snii, elt):
     # get the energy at the mass leaving halfway through the timestep
     mass = 0.5 * (m1 + this_m2)
     if mass > 20.0:  # we have HN
-        # here's we'll try out all combos of SN and HN to see if any of them
-        # produce the energy output. We have to do this because the specific
-        # number of SN or HN is sampled from a binomial distribution
-        energy_hn = snii.hn_energy_py(mass)
-        for n_hn in range(n_sn_total + 1): # need to include an all HN iteration
-            n_sn = n_sn_total - n_hn
-            this_E = n_sn * E_0 + n_hn * energy_hn
-            if this_E == pytest.approx(ejected_E, abs=0, rel=1E-5):
-                break
+        n_sn, n_hn = supernova_partition(ejected_E, n_sn_total, mass)
     else:  # just regular SN, easy to check
         n_sn = n_sn_total
         n_hn = 0
