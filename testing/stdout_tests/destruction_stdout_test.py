@@ -1,4 +1,5 @@
 import pytest
+import random
 
 import numpy as np
 from scipy import special
@@ -15,25 +16,37 @@ def true_f_bound(eps_int):
     term_c = np.exp(-3 * eps_int / alpha_star)
     return (term_a - term_b * term_c) * f_sat
 
-def test_destruction_stdout():
-    num_completed = 0
-    stdout_file = this_dir/"f_bound_stdout.txt"
-    with stdout_file.open("r") as stdout:
-        for idx, line in enumerate(stdout):
-            if "eps_int" not in line:
-                continue
+# go through the file and parse it
+f_bound_points = []
+stdout_file = this_dir/"f_bound_stdout.txt"
+with stdout_file.open("r") as stdout:
+    for idx, line in enumerate(stdout):
+        if "eps_int" not in line:
+            continue
 
-            split_line = line.split(" ")
+        split_line = line.split(" ")
 
-            initial_mass = float(split_line[-7].replace(",", ""))
-            star_ibound = float(split_line[-5].replace(",", ""))
-            eps_int = float(split_line[-3].replace(",", ""))
-            f_bound = float(split_line[-1].replace(",", ""))
+        initial_mass = float(split_line[-7].replace(",", ""))
+        star_ibound = float(split_line[-5].replace(",", ""))
+        eps_int = float(split_line[-3].replace(",", ""))
+        f_bound = float(split_line[-1].replace(",", ""))
 
-            true_eps_int = initial_mass / star_ibound
-            assert true_eps_int == approx(eps_int, rel=1E-6, abs=1E-15)
-            assert true_f_bound(true_eps_int) == approx(f_bound, rel=1E-6, abs=1E-15)
+        f_bound_points.append({"initial_mass": initial_mass,
+                               "star_ibound": star_ibound,
+                               "eps_int": eps_int,
+                               "f_bound": f_bound})
 
-            num_completed += 1
+# we only need some of these
+n_tests = 1000
+assert len(f_bound_points) > n_tests
+f_bound_points = random.sample(f_bound_points, n_tests)
 
-    assert num_completed > 0
+@pytest.mark.parametrize("point", f_bound_points)
+def test_eps_int(point):
+    true_eps_int = point["initial_mass"] / point["star_ibound"]
+    assert true_eps_int == approx(point["eps_int"])
+
+@pytest.mark.parametrize("point", f_bound_points)
+def test_eps_int(point):
+    assert true_f_bound(point["eps_int"]) == approx(point["f_bound"])
+

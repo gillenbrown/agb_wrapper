@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 this_dir = Path(__file__).absolute().parent
 sys.path.append(str(this_dir.parent.parent))
-from core_elts import lib as core_elts
+from core_enrich_ia_elts_cluster_discrete import lib as core_elts
 core_elts.detailed_enrichment_init()
 
 import pytest
@@ -36,19 +36,14 @@ for idx, elt in enumerate(elts):
 # Make a wrapper to test functions on all outputs, but without using pytests
 # parameterize. I don't want to do this because it counts each iteration as an
 # extra test, making the number of tests go crazy. This doesn't do that.
-def all_outputs(func):
-    def internal():
-        for output in floor_values:
-            func(output)
-    return internal
 
-@all_outputs
+@pytest.mark.parametrize("output", floor_values)
 def test_nonzero(output):
     # everything should be greater than one
     for density in output.values():
         assert density > 0
 
-@all_outputs
+@pytest.mark.parametrize("output", floor_values)
 def test_metal_fractions(output):
     # make sure the densities match the raw SN yield
     for elt in elts:
