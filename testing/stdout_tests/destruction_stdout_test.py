@@ -36,10 +36,11 @@ with stdout_file.open("r") as stdout:
                                "eps_int": eps_int,
                                "f_bound": f_bound})
 
+assert len(f_bound_points) > 10
 # we only need some of these
-n_tests = 1000
-assert len(f_bound_points) > n_tests
-f_bound_points = random.sample(f_bound_points, n_tests)
+n_tests = 100000000
+if len(f_bound_points) > n_tests:
+    f_bound_points = random.sample(f_bound_points, n_tests)
 
 @pytest.mark.parametrize("point", f_bound_points)
 def test_eps_int(point):
