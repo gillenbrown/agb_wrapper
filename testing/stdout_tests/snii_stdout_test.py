@@ -74,6 +74,72 @@ timesteps_with_sn = timesteps_good_with_hn_and_sn + timesteps_good_with_sn_only
 timesteps_without_sn = timesteps_good_without_sn + timesteps_early
 timesteps_all = timesteps_with_sn + timesteps_without_sn
 
+
+# ==============================================================================
+#
+# Convenience functions
+#
+# ==============================================================================
+# first define some functions to get code units based on my understanding of
+# them. This will help me make sure I'm using units correctly
+# the cosmological parameters are from the old IC
+base_code_length = u.def_unit("base_code_length", 4 * u.Mpc / 128)
+h = 0.6814000010490417
+H_0 = 100 * h * u.km / (u.second * u.Mpc)
+omega_m = 0.3035999834537506
+code_mass = u.def_unit("code_mass", 3 * H_0**2 * omega_m / (8 * np.pi * c.G) *
+                       base_code_length**3)
+base_code_time = u.def_unit("base_code_time", 2.0 / (H_0 * np.sqrt(omega_m)))
+def code_time_func(a_box):
+    return u.def_unit("code_time", base_code_time * a_box**2)
+
+def code_length_func(a_box):
+    return u.def_unit("code_length", base_code_length * a_box)
+
+def code_energy_func(a_box):
+    e_val = code_mass * (code_length_func(a_box) / code_time_func(a_box))**2
+    return u.def_unit("code_energy", e_val)
+
+def code_energy_to_erg(energy_in_code_units, a):
+    code_energy = code_energy_func(a)
+    return (energy_in_code_units * code_energy).to(u.erg).value
+
+def get_stars_in_mass_range(step):
+    m_low = max(min(step["m_turnoff_next"], 50.0), 8.0)
+    m_high = max(min(step["m_turnoff_now"], 50.0), 8.0)
+
+    imf.normalize(step["stellar mass Msun"])
+    return integrate.quad(imf.normalized_dn_dm, m_low, m_high)[0]
+
+def get_sn_mass(step):
+    # get the number of supernovae based on the energy
+    return 0.5 * (step["m_turnoff_now"] + step["m_turnoff_next"])
+
+def sn_and_hn(step):
+    # Determine how many SN and HN are happening in a given timestep. First
+    # we'll use the IMF limits to estimate how many SN are possible in this
+    # timestep. then we'll test all possible combinations of SN and HN in this
+    # timestep to see if they match the energy injected
+    energy_ergs = code_energy_to_erg(step["energy added"], step["abox[level]"])
+    sn_mass = get_sn_mass(step)
+    n_stars = get_stars_in_mass_range(step)
+    # adjust this up to account for possible errors in the IMF integration
+    n_stars = int(round(n_stars * 1.5, 0))
+
+    if sn_mass < 20.0:  # no HN
+        n_sn = int(round(energy_ergs / 1E51, 0))
+        return n_sn, 0
+    else:
+        hn_energy = snii_c_code.hn_energy_py(sn_mass)
+        for n_hn in range(n_stars):
+            for n_sn in range(n_stars):
+                this_E = n_sn * 1E51 + n_hn * hn_energy
+                if this_E == pytest.approx(energy_ergs, abs=0, rel=1E-5):
+                    return n_sn, n_hn
+        # if we got here we didn't find an answer
+        assert False
+
+
 # ==============================================================================
 #
 # Timesteps and age
@@ -134,26 +200,6 @@ def test_turnoff_next_exact_values(step):
 # code details
 #
 # ==============================================================================
-# first define some functions to get code units based on my understanding of
-# them. This will help me make sure I'm using units correctly
-# the cosmological parameters are from the old IC
-base_code_length = u.def_unit("base_code_length", 4 * u.Mpc / 128)
-h = 0.6814000010490417
-H_0 = 100 * h * u.km / (u.second * u.Mpc)
-omega_m = 0.3035999834537506
-code_mass = u.def_unit("code_mass", 3 * H_0**2 * omega_m / (8 * np.pi * c.G) *
-                       base_code_length**3)
-base_code_time = u.def_unit("base_code_time", 2.0 / (H_0 * np.sqrt(omega_m)))
-def code_time_func(a_box):
-    return u.def_unit("code_time", base_code_time * a_box**2)
-
-def code_length_func(a_box):
-    return u.def_unit("code_length", base_code_length * a_box)
-
-def code_energy_func(a_box):
-    e_val = code_mass * (code_length_func(a_box) / code_time_func(a_box))**2
-    return u.def_unit("code_energy", e_val)
-
 # Then we can use these to check the values in the code
 @pytest.mark.parametrize("step", timesteps_all)
 def test_time_factor_value(step):
@@ -183,7 +229,6 @@ def test_energy_1E51_value(step):
 
     # broader tolerance, a^2 leaves it more vulnerable
     assert (1E51 * u.erg).to(code_energy).value == approx(ergs_1E51, rel=1E-4, abs=0)
-
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_snii_vol(step):
@@ -224,7 +269,7 @@ def test_total_metallicity(step):
 
 # ==============================================================================
 #
-# unexploded SN
+# unexploded SN and numbers of SN
 #
 # ==============================================================================
 @pytest.mark.parametrize("step", timesteps_all)
@@ -237,11 +282,7 @@ def test_unexploded_sn_new_reasonable(step):
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_unexploded_sn_new_exact_no_sn(step):
-    m_low = max(min(step["m_turnoff_next"], 50.0), 8.0)
-    m_high = max(min(step["m_turnoff_now"], 50.0), 8.0)
-
-    imf.normalize(step["stellar mass Msun"])
-    n_stars = integrate.quad(imf.normalized_dn_dm, m_low, m_high)[0]
+    n_stars = get_stars_in_mass_range(step)
 
     old_counter = step["unexploded_sn current"]
     new_counter = step["unexploded_sn new"]
@@ -249,61 +290,19 @@ def test_unexploded_sn_new_exact_no_sn(step):
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_unexploded_sn_new_exact(step):
-    m_low  = max(min(step["m_turnoff_next"], 50.0), 8.0)
-    m_high = max(min(step["m_turnoff_now"],  50.0), 8.0)
-
-    imf.normalize(step["stellar mass Msun"])
-    n_stars = integrate.quad(imf.normalized_dn_dm, m_low, m_high)[0]
+    n_stars = get_stars_in_mass_range(step)
 
     old_counter = step["unexploded_sn current"]
     new_counter = step["unexploded_sn new"]
     correct_counter = (old_counter + n_stars) % 1.0
     assert new_counter == approx(correct_counter, abs=1E-5, rel=0)
 
-# ==============================================================================
-#
-# SN energy
-#
-# ==============================================================================
-def code_energy_to_erg(energy_code, a):
-    code_energy = code_energy_func(a)
-    return (energy_code * code_energy).to(u.erg).value
-
-# These are a bit tricky, since we have to figure out whether we have a
-# supernovae or hypernova. I will first write a function to determine how many
-# supernovae or hypernovae happened based on the energy injected
-def sn_and_hn(code_energy_added, sn_mass, a):
-    energy_ergs = code_energy_to_erg(code_energy_added, a)
-    # boost it every so slightly to account for floating point errors, since
-    # in the upcoming code I"ll subtract from this initial value
-    energy_ergs *= 1.000001
-    if sn_mass > 20.0:  # we can have HN
-        hn_energy_this_mass = snii_c_code.hn_energy_py(sn_mass)
-        # hn are always dominant over SN, so the dominant fraction of energy
-        # will be from HN, if they exist
-        n_hn = int(energy_ergs // hn_energy_this_mass)
-        energy_ergs -= n_hn * hn_energy_this_mass
-    else:
-        n_hn = 0
-    # then everything that's left over is SN
-    n_sn = int(round(energy_ergs / 1E51, 0))  # each SN is 1E51 ergs
-    return n_sn, n_hn
-
 @pytest.mark.parametrize("step", timesteps_with_sn)
 def test_number(step):
-    # get the number of supernovae based on the energy
-    mass = 0.5 * (step["m_turnoff_now"] + step["m_turnoff_next"])
-
-    n_sn, n_hn = sn_and_hn(step["energy added"], mass, step["abox[level]"])
+    n_sn, n_hn = sn_and_hn(step)
     # then get the number expected by the IMF integration
-    m_low = max(min(step["m_turnoff_next"], 50.0), 8.0)
-    m_high = max(min(step["m_turnoff_now"], 50.0), 8.0)
-
-    imf.normalize(step["stellar mass Msun"])
-    n_stars = integrate.quad(imf.normalized_dn_dm, m_low, m_high)[0]
-
+    n_stars = get_stars_in_mass_range(step)
     expected_n_sn = (step["unexploded_sn current"] + n_stars) // 1.0
-
     assert n_sn + n_hn == expected_n_sn
 
 
@@ -359,19 +358,19 @@ idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "SNII": 7,
 @pytest.mark.parametrize("step", timesteps_with_sn)
 @pytest.mark.parametrize("elt", modified_elts)
 def test_ejected_yields(step, elt):
-    m = 0.5 * (step["m_turnoff_next"] + step["m_turnoff_now"])
+    m = get_sn_mass(step)
     z = step["metallicity"]
     # get the number of supernovae based on yields
-    n_sn, n_hn = sn_and_hn(step["energy added"], m, step["abox[level]"])
+    n_sn, n_hn = sn_and_hn(step)
 
     yields_snii = core_c_code.get_yields_raw_sn_ii_py(z, m)[idxs[elt]]
     yields_hnii = core_c_code.get_yields_raw_hn_ii_py(z, m)[idxs[elt]]
 
-    total_ejected = yields_snii * n_sn + yields_hnii * n_hn
-    # this is in stellar masses, have to convert to code density
-    total_ejected_code = (total_ejected * u.Msun).to(code_mass).value
+    mass_ejected = yields_snii * n_sn + yields_hnii * n_hn
+    # this is in stellar masses, have to convert to code masses
+    mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
-    ejected_density = total_ejected_code * step["1/vol"]
-    assert ejected_density == approx(step["{}_added".format(elt)])
+    density_ejected_code = mass_ejected_code * step["1/vol"]
+    assert density_ejected_code == approx(step["{}_added".format(elt)])
 
 #TODO: test that the mass loss is done correctly
