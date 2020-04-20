@@ -49,12 +49,14 @@ for timestep in timesteps_all:
     else:  # should not happen!
         raise ValueError("Bad SN checks")
 
+
 # we need some of each
 def test_good_amount_of_tests():
     assert len(timesteps_good_with_hn_and_sn) >= n_tests
     assert len(timesteps_good_with_sn_only) >= n_tests
     assert len(timesteps_good_without_sn) >= n_tests
     assert len(timesteps_early) >= n_tests
+
 
 # draw a random sample of these to compare against, to make tests faster
 # this sampling is done without replacement
@@ -63,6 +65,7 @@ def random_sample(full_sample):
     if len(full_sample) < n_tests:
         return full_sample
     return random.sample(full_sample, n_tests)
+
 
 timesteps_good_with_hn_and_sn = random_sample(timesteps_good_with_hn_and_sn)
 timesteps_good_with_sn_only = random_sample(timesteps_good_with_sn_only)
@@ -122,20 +125,18 @@ def sn_and_hn(step):
     # timestep to see if they match the energy injected
     energy_ergs = code_energy_to_erg(step["energy added"], step["abox[level]"])
     sn_mass = get_sn_mass(step)
-    n_stars = get_stars_in_mass_range(step)
-    # adjust this up to account for possible errors in the IMF integration
-    n_stars = int(round(n_stars * 1.5, 0))
+    total_sn = step["number SN"]
 
     if sn_mass < 20.0:  # no HN
         n_sn = int(round(energy_ergs / 1E51, 0))
         return n_sn, 0
     else:
         hn_energy = snii_c_code.hn_energy_py(sn_mass)
-        for n_hn in range(n_stars):
-            for n_sn in range(n_stars):
-                this_E = n_sn * 1E51 + n_hn * hn_energy
-                if this_E == pytest.approx(energy_ergs, abs=0, rel=1E-5):
-                    return n_sn, n_hn
+        for n_hn in range(total_sn + 1): # have iteration with all HN
+            n_sn = total_sn - n_hn
+            this_E = n_sn * 1E51 + n_hn * hn_energy
+            if this_E == pytest.approx(energy_ergs, abs=0, rel=1E-5):
+                return n_sn, n_hn
         # if we got here we didn't find an answer
         assert False
 
@@ -153,9 +154,12 @@ def test_ave_age_range(step):
     assert 0 < diff < 15E6
 
 @pytest.mark.parametrize("step", timesteps_all)
-def test_age(step):
+def test_age_calculation(step):
     test_age = step["time"] - step["ave_birth"]
     assert step["age"] == test_age
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_age_value(step):
     # The first timestep a star forms, it's ave_birth will be set to half of
     # the current timestep after the current time, so in this first timestep
     # the star can have negative ages.
@@ -203,19 +207,21 @@ def test_turnoff_next_exact_values(step):
 # Then we can use these to check the values in the code
 @pytest.mark.parametrize("step", timesteps_all)
 def test_time_factor_value(step):
+    # in the code this is the number of seconds in a code time unit
     factor = step["code time"]
-
     code_time = code_time_func(step["abox[level]"])
     assert (1.0 * code_time).to(u.second).value == approx(factor, rel=1E-10, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_length_factor_value(step):
+    # in the code this is the number of cm in a code length unit
     factor = step["code length"]
     code_length = code_length_func(step["abox[level]"])
     assert (1.0 * code_length).to(u.cm).value == approx(factor, rel=1E-10, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_energy_factor_value(step):
+    # in the code this is the number of ergs in a code energy unit
     factor = step["code energy"]
     code_energy = code_energy_func(step["abox[level]"])
     # broader tolerance, a^2 leaves it more vulnerable
@@ -223,12 +229,10 @@ def test_energy_factor_value(step):
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_energy_1E51_value(step):
-    ergs_1E51 = step["1E51 ergs"]
-
-    code_energy = code_energy_func(step["abox[level]"])
-
+    ergs = code_energy_to_erg(step["1E51 ergs in code energy"],
+                              step["abox[level]"])
     # broader tolerance, a^2 leaves it more vulnerable
-    assert (1E51 * u.erg).to(code_energy).value == approx(ergs_1E51, rel=1E-4, abs=0)
+    assert ergs == pytest.approx(1E51, rel=1E-4, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_snii_vol(step):
@@ -254,9 +258,9 @@ def test_mass_conversion(step):
 @pytest.mark.parametrize("step", timesteps_all)
 def test_metallicity_range(step):
     # just a check that we're getting the correct thing
-    assert 0 < step["metallicity II"] < 1
-    assert 0 < step["metallicity Ia"] < 1
-    assert 0 < step["metallicity AGB"] < 1
+    assert 0 < step["metallicity II"] <= step["metallicity"]
+    assert 0 < step["metallicity Ia"] < step["metallicity"]
+    assert 0 < step["metallicity AGB"] < step["metallicity"]
     assert 0 < step["metallicity"] < 1
 
 
@@ -297,21 +301,68 @@ def test_unexploded_sn_new_exact(step):
     correct_counter = (old_counter + n_stars) % 1.0
     assert new_counter == approx(correct_counter, abs=1E-5, rel=0)
 
+# ==============================================================================
+#
+# energy and number of SN
+#
+# ==============================================================================
+# these are tied together since we determine the number of SN from the energy
 @pytest.mark.parametrize("step", timesteps_with_sn)
 def test_number(step):
-    n_sn, n_hn = sn_and_hn(step)
+    n_sn = step["number SN"]
     # then get the number expected by the IMF integration
     n_stars = get_stars_in_mass_range(step)
     expected_n_sn = (step["unexploded_sn current"] + n_stars) // 1.0
-    assert n_sn + n_hn == expected_n_sn
+    assert n_sn == expected_n_sn
 
+@pytest.mark.parametrize("step", timesteps_with_sn)
+def test_energy_is_possible(step):
+    n_sn_code = step["number SN"]
+    # getting the number of SN and HN will check if the energy combo is possible
+    n_sn, n_hn = sn_and_hn(step)
+    # this check should always pass since this is assumed in the sn_and_hn
+    # function, the real checking is done in the function above
+    assert n_sn + n_hn == n_sn_code
+
+@pytest.mark.parametrize("step", timesteps_with_sn)
+def test_cell_gas_energy_increases_with_sn(step):
+    assert step["cell_gas_energy new"] > step["cell_gas_energy current"]
+
+@pytest.mark.parametrize("step", timesteps_without_sn)
+def test_cell_gas_energy_unchanged_with_no_sn(step):
+    assert step["cell_gas_energy new"] == step["cell_gas_energy current"]
+
+@pytest.mark.parametrize("step", timesteps_with_sn)
+def test_cell_gas_internal_energy_increases_with_sn(step):
+    assert step["cell_gas_internal_energy new"] > step["cell_gas_internal_energy current"]
+
+@pytest.mark.parametrize("step", timesteps_without_sn)
+def test_cell_gas_internal_energy_unchanged_with_no_sn(step):
+    assert step["cell_gas_internal_energy new"] == step["cell_gas_internal_energy current"]
+
+@pytest.mark.parametrize("step", timesteps_with_sn)
+def test_cell_gas_turbulent_energy_increases_with_sn(step):
+    assert step["cell_gas_turbulent_energy new"] > step["cell_gas_turbulent_energy current"]
+
+@pytest.mark.parametrize("step", timesteps_without_sn)
+def test_cell_gas_turbulent_energy_unchanged_with_no_sn(step):
+    assert step["cell_gas_turbulent_energy new"] == step["cell_gas_turbulent_energy current"]
+
+
+@pytest.mark.parametrize("step", timesteps_with_sn)
+def test_cell_gas_pressure_increases_with_sn(step):
+    assert step["cell_gas_pressure new"] > step["cell_gas_pressure current"]
+
+@pytest.mark.parametrize("step", timesteps_without_sn)
+def test_cell_gas_internal_energy_unchanged_with_no_sn(step):
+    assert step["cell_gas_pressure new"] == step["cell_gas_pressure current"]
 
 # ==============================================================================
 #
 # yield checking - simple checks
 #
 # ==============================================================================
-modified_elts = ["C", "N", "O", "Mg", "S", "Ca", "Fe", "SNII"]
+modified_elts = ["C", "N", "O", "Mg", "S", "Ca", "Fe", "SNII", "total"]
 not_modified_elts = ["AGB", "SNIa"]
 all_elts = modified_elts + not_modified_elts
 
@@ -321,6 +372,11 @@ def test_no_change_when_no_sn(step, elt):
     current = step["{} current".format(elt)]
     new = step["{} new".format(elt)]
     assert current == new
+
+@pytest.mark.parametrize("step", timesteps_without_sn)
+@pytest.mark.parametrize("elt", modified_elts)
+def test_no_added_when_no_sn(step, elt):
+    assert step["{}_added".format(elt)] == 0
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", not_modified_elts)
@@ -335,6 +391,11 @@ def test_sn_increase_elements(step, elt):
     current = step["{} current".format(elt)]
     new = step["{} new".format(elt)]
     assert current < new
+
+@pytest.mark.parametrize("step", timesteps_with_sn)
+@pytest.mark.parametrize("elt", modified_elts)
+def test_sn_have_added(step, elt):
+    assert step["{}_added".format(elt)] > 0
 
 @pytest.mark.parametrize("step", timesteps_with_sn)
 @pytest.mark.parametrize("elt", modified_elts)
@@ -373,4 +434,21 @@ def test_ejected_yields(step, elt):
     density_ejected_code = mass_ejected_code * step["1/vol"]
     assert density_ejected_code == approx(step["{}_added".format(elt)])
 
-#TODO: test that the mass loss is done correctly
+# ==============================================================================
+#
+# Particle mass loss
+#
+# ==============================================================================
+@pytest.mark.parametrize("step", timesteps_with_sn)
+def test_sn_mass_loss(step):
+    old_mass = step["particle_mass current"]
+    lost_density = step["total_added"]
+    lost_mass = lost_density / step["1/vol"]
+
+    expected_new_mass = old_mass - lost_mass
+    assert step["particle_mass new"] == pytest.approx(expected_new_mass)
+
+@pytest.mark.parametrize("step", timesteps_without_sn)
+def test_no_sn_mass_loss(step,):
+    assert step["particle_mass new"] == step["particle_mass current"]
+
