@@ -16,35 +16,31 @@ from parse_stdout import parse_file
 this_dir = Path(__file__).absolute().parent
 sys.path.append(str(this_dir.parent.parent))
 
-from snii_enrich_ia_elts_cluster_discrete import lib as snii_c_code
+from snia_enrich_ia_elts_cluster_discrete import lib as snia_c_code
 from core_enrich_ia_elts_cluster_discrete import lib as core_c_code
 
 core_c_code.detailed_enrichment_init()
-snii_c_code.detailed_enrichment_init()
-snii_c_code.init_rand()
+snia_c_code.detailed_enrichment_init()
 
 lt = tabulation.Lifetimes("Raiteri_96")
-imf = tabulation.IMF("Kroupa", 0.08, 50)
 
 n_tests = 10
 
-timesteps_all = parse_file(str(this_dir/"snii_stdout.txt"), "SNII")
+timesteps_all = parse_file(str(this_dir/"snia_stdout.txt"), "SNIa")
 
 # then go through them and put them in a few categories to parse them more
 # carefully later
-timesteps_good_with_hn_and_sn = []
+timesteps_with_sn = []
 timesteps_good_with_sn_only = []
 timesteps_good_without_sn = []
 timesteps_early = []
 
 for timestep in timesteps_all:
-    if timestep["energy added"] > 0 and timestep["m_turnoff_now"] > 20:
-        timesteps_good_with_hn_and_sn.append(timestep)
-    elif timestep["energy added"] > 0 and timestep["m_turnoff_now"] <= 20:
-        timesteps_good_with_sn_only.append(timestep)
-    elif timestep["energy added"] == 0 and timestep["m_turnoff_next"] > 50:
+    if timestep["energy added"] > 0:
+        timesteps_with_sn.append(timestep)
+    elif timestep["energy added"] == 0 and timestep["age"] < timestep["t_start"]:
         timesteps_early.append(timestep)
-    elif timestep["energy added"] == 0 and timestep["m_turnoff_next"] < 50:
+    elif timestep["energy added"] == 0 and timestep["age"] > timestep["t_start"]:
         timesteps_good_without_sn.append(timestep)
     else:  # should not happen!
         raise ValueError("Bad SN checks")
@@ -52,8 +48,7 @@ for timestep in timesteps_all:
 
 # we need some of each
 def test_good_amount_of_tests():
-    assert len(timesteps_good_with_hn_and_sn) >= n_tests
-    assert len(timesteps_good_with_sn_only) >= n_tests
+    assert len(timesteps_with_sn) >= n_tests
     assert len(timesteps_good_without_sn) >= n_tests
     assert len(timesteps_early) >= n_tests
 
@@ -67,22 +62,32 @@ def random_sample(full_sample):
     return random.sample(full_sample, n_tests)
 
 
-timesteps_good_with_hn_and_sn = random_sample(timesteps_good_with_hn_and_sn)
-timesteps_good_with_sn_only = random_sample(timesteps_good_with_sn_only)
+timesteps_with_sn = random_sample(timesteps_with_sn)
 timesteps_good_without_sn = random_sample(timesteps_good_without_sn)
 timesteps_early = random_sample(timesteps_early)
 
 # then make some supersets that will be useful later
-timesteps_with_sn = timesteps_good_with_hn_and_sn + timesteps_good_with_sn_only
 timesteps_without_sn = timesteps_good_without_sn + timesteps_early
 timesteps_all = timesteps_with_sn + timesteps_without_sn
-
 
 # ==============================================================================
 #
 # Convenience functions
 #
 # ==============================================================================
+def true_snia_number(step):
+    # see https://nbviewer.jupyter.org/github/gillenbrown/agb_wrapper/blob/master/testing/informal_tests/snia.ipynb
+    # and
+    # https://nbviewer.jupyter.org/github/gillenbrown/Tabulation/blob/master/notebooks/sn_Ia.ipynb
+    norm = step["stellar mass Msun"] * 1.6E-3 * 2.3480851917 / 0.13
+
+    age_1 = step["age"]
+    age_2 = step["age"] + step["dt"]
+    return norm * (age_1**(-0.13) - age_2**(-0.13))
+
+def get_num_sn(step):
+    return step["energy added"] / step["energy per SN"]
+
 # first define some functions to get code units based on my understanding of
 # them. This will help me make sure I'm using units correctly
 # the cosmological parameters are from the old IC
@@ -107,40 +112,6 @@ def code_energy_to_erg(energy_in_code_units, a):
     code_energy = code_energy_func(a)
     return (energy_in_code_units * code_energy).to(u.erg).value
 
-def get_stars_in_mass_range(step):
-    m_low = max(min(step["m_turnoff_next"], 50.0), 8.0)
-    m_high = max(min(step["m_turnoff_now"], 50.0), 8.0)
-
-    imf.normalize(step["stellar mass Msun"])
-    return integrate.quad(imf.normalized_dn_dm, m_low, m_high)[0]
-
-def get_sn_mass(step):
-    # get the number of supernovae based on the energy
-    return 0.5 * (step["m_turnoff_now"] + step["m_turnoff_next"])
-
-def sn_and_hn(step):
-    # Determine how many SN and HN are happening in a given timestep. First
-    # we'll use the IMF limits to estimate how many SN are possible in this
-    # timestep. then we'll test all possible combinations of SN and HN in this
-    # timestep to see if they match the energy injected
-    energy_ergs = code_energy_to_erg(step["energy added"], step["abox[level]"])
-    sn_mass = get_sn_mass(step)
-    total_sn = step["number SN"]
-
-    if sn_mass < 20.0:  # no HN
-        n_sn = int(round(energy_ergs / 1E51, 0))
-        return n_sn, 0
-    else:
-        hn_energy = snii_c_code.hn_energy_py(sn_mass)
-        for n_hn in range(total_sn + 1): # have iteration with all HN
-            n_sn = total_sn - n_hn
-            this_E = n_sn * 1E51 + n_hn * hn_energy
-            if this_E == pytest.approx(energy_ergs, abs=0, rel=1E-5):
-                return n_sn, n_hn
-        # if we got here we didn't find an answer
-        assert False
-
-
 # ==============================================================================
 #
 # Timesteps and age
@@ -160,44 +131,17 @@ def test_age_calculation(step):
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_age_value(step):
-    # The first timestep a star forms, it's ave_birth will be set to half of
-    # the current timestep after the current time, so in this first timestep
-    # the star can have negative ages.
-    assert step["age"] > 0 or \
-           step["age"] == -0.5 * step["dt"]
+    assert step["age"] > step["t_start"] > 0
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_dt(step):
     test_dt = step["next"] - step["time"]
     assert step["dt"] == test_dt
 
-# ==============================================================================
-#
-# Turnoff masses
-#
-# ==============================================================================
 @pytest.mark.parametrize("step", timesteps_all)
-def test_turnoff_now_exact_values(step):
-    true_turnoff_mass = lt.turnoff_mass(step["age"], step["metallicity"])
-    # early times are a bit sketchier, since the lifetime function in ART
-    # isn't quite as good as it could be.
-    if true_turnoff_mass > 70:
-        assert step["m_turnoff_now"] > 70
-    else:
-        # require exact values
-        assert step["m_turnoff_now"] == approx(true_turnoff_mass)
-
-@pytest.mark.parametrize("step", timesteps_all)
-def test_turnoff_next_exact_values(step):
-    true_turnoff_mass = lt.turnoff_mass(step["age"] + step["dt"],
-                                        step["metallicity"])
-    # early times are a bit sketchier, since the lifetime function in ART
-    # isn't quite as good as it could be.
-    if true_turnoff_mass > 70:
-        assert step["m_turnoff_next"] > 70
-    else:
-        # require exact values
-        assert step["m_turnoff_next"] == approx(true_turnoff_mass)
+def test_t_start(step):
+    true_t_start = lt.lifetime(8.0, step["metallicity"])
+    assert step["start"] == approx(true_t_start)
 
 # ==============================================================================
 #
@@ -228,11 +172,11 @@ def test_energy_factor_value(step):
     assert (1.0 * code_energy).to(u.erg).value == approx(factor, rel=1E-4, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
-def test_energy_1E51_value(step):
-    ergs = code_energy_to_erg(step["1E51 ergs in code energy"],
+def test_energy_2E51_value(step):
+    ergs = code_energy_to_erg(step["energy per SN"],
                               step["abox[level]"])
     # broader tolerance, a^2 leaves it more vulnerable
-    assert ergs == pytest.approx(1E51, rel=1E-4, abs=0)
+    assert ergs == pytest.approx(2E51, rel=1E-4, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_vol(step):
@@ -286,19 +230,20 @@ def test_unexploded_sn_new_reasonable(step):
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_unexploded_sn_new_exact_no_sn(step):
-    n_stars = get_stars_in_mass_range(step)
+    true_sn = true_snia_number(step)
 
     old_counter = step["unexploded_sn current"]
     new_counter = step["unexploded_sn new"]
-    assert new_counter == approx(old_counter + n_stars, abs=1E-5, rel=0)
+    assert new_counter == approx(old_counter + true_sn, abs=1E-5, rel=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_unexploded_sn_new_exact(step):
-    n_stars = get_stars_in_mass_range(step)
+    true_sn = true_snia_number(step)
 
     old_counter = step["unexploded_sn current"]
     new_counter = step["unexploded_sn new"]
-    correct_counter = (old_counter + n_stars) % 1.0
+
+    correct_counter = (old_counter + true_sn) % 1.0
     assert new_counter == approx(correct_counter, abs=1E-5, rel=0)
 
 # ==============================================================================
@@ -306,23 +251,20 @@ def test_unexploded_sn_new_exact(step):
 # energy and number of SN
 #
 # ==============================================================================
-# these are tied together since we determine the number of SN from the energy
+# I don't directly test energy, since we use that to calculate the number of SN
+# and then check that number
 @pytest.mark.parametrize("step", timesteps_with_sn)
-def test_number(step):
-    n_sn = step["number SN"]
-    # then get the number expected by the IMF integration
-    n_stars = get_stars_in_mass_range(step)
-    expected_n_sn = (step["unexploded_sn current"] + n_stars) // 1.0
-    assert n_sn == expected_n_sn
+def test_integer_number_sn(step):
+    n_sn = get_num_sn(step)
+    assert int(n_sn) == approx(n_sn)
 
 @pytest.mark.parametrize("step", timesteps_with_sn)
-def test_energy_is_possible(step):
-    n_sn_code = step["number SN"]
-    # getting the number of SN and HN will check if the energy combo is possible
-    n_sn, n_hn = sn_and_hn(step)
-    # this check should always pass since this is assumed in the sn_and_hn
-    # function, the real checking is done in the function above
-    assert n_sn + n_hn == n_sn_code
+def test_number(step):
+    sn_in_step = true_snia_number(step)
+    old_counter = step["unexploded_sn current"]
+    expected_sn = (old_counter + sn_in_step) // 1
+
+    assert expected_sn == get_num_sn(step)
 
 @pytest.mark.parametrize("step", timesteps_with_sn)
 def test_cell_gas_energy_increases_with_sn(step):
@@ -362,8 +304,8 @@ def test_cell_gas_internal_energy_unchanged_with_no_sn(step):
 # yield checking - simple checks
 #
 # ==============================================================================
-modified_elts = ["C", "N", "O", "Mg", "S", "Ca", "Fe", "SNII", "total"]
-not_modified_elts = ["AGB", "SNIa"]
+modified_elts = ["C", "N", "O", "Mg", "S", "Ca", "Fe", "SNIa", "total"]
+not_modified_elts = ["AGB", "SNII"]
 all_elts = modified_elts + not_modified_elts
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
@@ -380,7 +322,7 @@ def test_no_added_when_no_sn(step, elt):
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", not_modified_elts)
-def test_agb_and_snia_never_change(step, elt):
+def test_agb_and_snii_never_change(step, elt):
     current = step["{} current".format(elt)]
     new = step["{} new".format(elt)]
     assert current == new
@@ -419,15 +361,13 @@ idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "SNII": 7,
 @pytest.mark.parametrize("step", timesteps_with_sn)
 @pytest.mark.parametrize("elt", modified_elts)
 def test_ejected_yields(step, elt):
-    m = get_sn_mass(step)
     z = step["metallicity"]
     # get the number of supernovae based on yields
-    n_sn, n_hn = sn_and_hn(step)
+    n_sn = get_num_sn(step)
 
-    yields_snii = core_c_code.get_yields_raw_sn_ii_py(z, m)[idxs[elt]]
-    yields_hnii = core_c_code.get_yields_raw_hn_ii_py(z, m)[idxs[elt]]
+    yields_snia = core_c_code.get_yields_sn_ia_py(z)[idxs[elt]]
 
-    mass_ejected = yields_snii * n_sn + yields_hnii * n_hn
+    mass_ejected = yields_snia * n_sn
     # this is in stellar masses, have to convert to code masses
     mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
