@@ -24,12 +24,12 @@ snii_c_code.detailed_enrichment_init()
 snii_c_code.init_rand()
 
 lt = tabulation.Lifetimes("Raiteri_96")
-imf = tabulation.IMF("Kroupa", 0.08, 50)
+imf = tabulation.IMF("Kroupa", 0.08, 50, total_mass=1.0)
 
 n_tests = 10
-rel = 1E-10
+rel = 1E-8
 
-timesteps_all = parse_file(str(this_dir/"snii_stdout.txt"), "SNII")
+timesteps_all = parse_file(str(this_dir/"stdout_snii.txt"), "SNII")
 
 # then go through them and put them in a few categories to parse them more
 # carefully later
@@ -126,7 +126,7 @@ def sn_and_hn(step):
     # timestep to see if they match the energy injected
     energy_ergs = code_energy_to_erg(step["energy added"], step["abox[level]"])
     sn_mass = get_sn_mass(step)
-    total_sn = step["number SN"]
+    total_sn = int(step["number SN"])
 
     if sn_mass < 20.0:  # no HN
         n_sn = int(round(energy_ergs / 1E51, 0))
@@ -310,6 +310,11 @@ def test_unexploded_sn_new_exact(step):
 #
 # ==============================================================================
 # these are tied together since we determine the number of SN from the energy
+@pytest.mark.parametrize("step", timesteps_with_sn)
+def test_number_is_integer(step):
+    n_sn = step["number SN"]
+    assert n_sn == approx(int(n_sn), abs=1E-10, rel=0)
+
 @pytest.mark.parametrize("step", timesteps_with_sn)
 def test_number(step):
     n_sn = step["number SN"]

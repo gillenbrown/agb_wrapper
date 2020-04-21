@@ -49,4 +49,4 @@ def test_metal_fractions(output):
     for elt in elts:
         this_metal_fraction = output[elt] / output["Z"]
         assert this_metal_fraction == pytest.approx(sn_metal_fractions[elt],
-                                                    abs=0, rel=1E-12)
+                                                    abs=0, rel=1E-6)

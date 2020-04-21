@@ -27,7 +27,7 @@ lt = tabulation.Lifetimes("Raiteri_96")
 n_tests = 10
 rel = 1E-10
 
-timesteps_all = parse_file(str(this_dir/"snia_stdout.txt"), "SNIa")
+timesteps_all = parse_file(str(this_dir/"stdout_snia.txt"), "SNIa")
 
 # then go through them and put them in a few categories to parse them more
 # carefully later

@@ -23,12 +23,11 @@ core_c_code.detailed_enrichment_init()
 wind_c_code.detailed_enrichment_init()
 
 lt = tabulation.Lifetimes("Raiteri_96")
-imf = tabulation.IMF("Kroupa", 0.08, 50)
 
 n_tests = 10
 rel = 1E-10
 
-timesteps_all = parse_file(str(this_dir/"wind_stdout.txt"), "wind")
+timesteps_all = parse_file(str(this_dir/"stdout_wind.txt"), "wind")
 
 # then go through them and put them in a few categories to parse them more
 # carefully later

@@ -23,12 +23,12 @@ core_c_code.detailed_enrichment_init()
 agb_c_code.detailed_enrichment_init()
 
 lt = tabulation.Lifetimes("Raiteri_96")
-imf = tabulation.IMF("Kroupa", 0.08, 50)
+imf = tabulation.IMF("Kroupa", 0.08, 50, total_mass=1.0)
 
 n_tests = 10
 rel = 1E-10
 
-timesteps_all = parse_file(str(this_dir/"agb_stdout.txt"), "AGB")
+timesteps_all = parse_file(str(this_dir/"stdout_agb.txt"), "AGB")
 
 # we need some of each
 def test_good_amount_of_tests():

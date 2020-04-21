@@ -20,7 +20,7 @@ def true_f_bound(eps_int):
 
 # go through the file and parse it
 f_bound_points = []
-stdout_file = this_dir/"f_bound_stdout.txt"
+stdout_file = this_dir/"stdout_f_bound.txt"
 with stdout_file.open("r") as stdout:
     for idx, line in enumerate(stdout):
         if "eps_int" not in line:
