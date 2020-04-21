@@ -43,8 +43,7 @@ scale_elts = ["S", "Ca", "Fe"]
 idxs_elts = {"S":0, "Ca":1, "Fe":2}
 
 # tolerances for tests
-rtol = 1E-4
-atol = 0
+rel = 1E-4
 
 # we want the possibility of having many timesteps to check against
 m_stars_1 = np.random.uniform(0.08, 8, 5)
@@ -103,7 +102,7 @@ def test_yields_actually_calculated(agb, m1, z, z_elts, m_cluster, elt):
     ejecta = agb.get_ejecta_agb_py(m1, this_m2, m_cluster, z, *z_elts)
     test_yield = ejecta[idxs_ejecta[elt]]
 
-    assert test_yield == pytest.approx(true_yield, abs=atol, rel=rtol)
+    assert test_yield == pytest.approx(true_yield, abs=0, rel=rel)
 
 @pytest.mark.parametrize("agb", agbs_all)
 @pytest.mark.parametrize("m1", m_stars_1)
@@ -127,7 +126,7 @@ def test_yields_scaled(agb, m1, z, z_elts, m_cluster, elt):
     ejecta = agb.get_ejecta_agb_py(m1, this_m2, m_cluster, z, *z_elts)
     test_yield = ejecta[idxs_ejecta[elt]]
 
-    assert test_yield == pytest.approx(true_yield, abs=atol, rel=rtol)
+    assert test_yield == pytest.approx(true_yield, abs=0, rel=rel)
 
 @pytest.mark.parametrize("agb", agbs_all)
 @pytest.mark.parametrize("m1", m_stars_1)
@@ -153,4 +152,4 @@ def test_ejecta_total_z(agb, m1, z, z_elts, m_cluster):
         true_z += n_agb_true * true_yields_per_agb[idxs_raw_yields["total"]] * z_elts[idxs_elts[elt]]
 
 
-    assert test_yield == pytest.approx(true_z, abs=atol, rel=rtol)
+    assert test_yield == pytest.approx(true_z, abs=0, rel=rel)

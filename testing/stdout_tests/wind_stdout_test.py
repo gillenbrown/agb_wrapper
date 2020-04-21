@@ -26,6 +26,7 @@ lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50)
 
 n_tests = 10
+rel = 1E-10
 
 timesteps_all = parse_file(str(this_dir/"wind_stdout.txt"), "wind")
 
@@ -117,18 +118,18 @@ def test_dt(step):
 @pytest.mark.parametrize("step", timesteps_all)
 def test_turnoff_now_exact_values(step):
     true_turnoff_mass = lt.turnoff_mass(step["age"], step["metallicity"])
-    assert step["m_turnoff_now"] == approx(true_turnoff_mass, abs=0, rel=1E-12)
+    assert step["m_turnoff_now"] == approx(true_turnoff_mass, abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_turnoff_next_exact_values(step):
     true_turnoff_mass = lt.turnoff_mass(step["age"] + step["dt"],
                                         step["metallicity"])
-    assert step["m_turnoff_next"] == approx(true_turnoff_mass, abs=0, rel=1E-12)
+    assert step["m_turnoff_next"] == approx(true_turnoff_mass, abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_age_50(step):
     true_age_50 = lt.lifetime(50, step["metallicity"])
-    assert step["age_50"] == approx(true_age_50, abs=0, rel=1E-12)
+    assert step["age_50"] == approx(true_age_50, abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -149,8 +150,8 @@ def test_mass_conversion(step):
     msun = step["stellar mass Msun"]
     code = step["stellar mass code"]
 
-    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
-    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
+    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=rel)
+    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -218,7 +219,7 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=0, rel=1E-12)
+    assert new_expected == approx(new, abs=0, rel=rel)
 
 
 # ==============================================================================
@@ -242,7 +243,7 @@ def test_total_ejecta(step):
     ejecta_true = (ejecta_1 - ejecta_0) * step["stellar mass Msun"]
     added_density_true = ejecta_true * step["1/vol"]
 
-    assert step["total added"] == approx(added_density_true, abs=0, rel=1E-12)
+    assert step["total added"] == approx(added_density_true, abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_before_sn)
 def test_total_ejecta_early(step):
@@ -253,13 +254,13 @@ def test_total_ejecta_early(step):
     ejecta_true = step["stellar mass Msun"] * ejecta_50 * step["dt"] / age_50
     added_density_true = ejecta_true * step["1/vol"]
 
-    assert step["total added"] == approx(added_density_true, abs=0, rel=1E-12)
+    assert step["total added"] == approx(added_density_true, abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", elts)
 def test_ejected_elements(step, elt):
     true_elt_ejecta = step["total added"] * step["metallicity {}".format(elt)]
-    assert step["{} added".format(elt)] == approx(true_elt_ejecta, abs=0, rel=1E-12)
+    assert step["{} added".format(elt)] == approx(true_elt_ejecta, abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -273,4 +274,4 @@ def test_mass_loss(step):
     lost_mass = lost_density / step["1/vol"]
 
     expected_new_mass = old_mass - lost_mass
-    assert step["particle_mass new"] == pytest.approx(expected_new_mass, abs=0, rel=1E-12)
+    assert step["particle_mass new"] == pytest.approx(expected_new_mass, abs=0, rel=rel)

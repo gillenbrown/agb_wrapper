@@ -1,4 +1,5 @@
 import pytest
+from pytest import approx
 
 import numpy as np
 from scipy import integrate, interpolate
@@ -38,8 +39,7 @@ idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "Z": 7,
         "total": 8, "E": 9, "N_SN": 10, "N_SN_left": 11}
 
 # tolerances for tests
-rtol = 1E-5
-atol = 0
+rel = 1E-4
 
 # energy per SN
 E_0 = 1E51
@@ -94,7 +94,7 @@ def test_number_sn_ejected_discrete(n_sn_left, m1, m_cluster, z, snii):
     # Discrete SN should have an integer number of SN
     ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, m2(m1), m_cluster, z)
     n_sn = ejecta[idxs['N_SN']]
-    assert int(n_sn) == pytest.approx(n_sn, abs=1E-10, rel=0)
+    assert int(n_sn) == approx(n_sn, abs=1E-10, rel=0)
 
 @pytest.mark.parametrize("m1", m_stars_1)
 @pytest.mark.parametrize("m_cluster", m_clusters)
@@ -104,7 +104,7 @@ def test_number_sn_ejected_continuous(m1, m_cluster, z, snii):
     # Continuous SN should not have an integer number of SN
     ejecta = snii.get_ejecta_sn_ii_py(0, m1, m2(m1), m_cluster, z)
     n_sn = ejecta[idxs['N_SN']]
-    assert int(n_sn) != pytest.approx(n_sn, abs=1E-10, rel=0)
+    assert int(n_sn) != approx(n_sn, abs=1E-10, rel=0)
 
 @pytest.mark.parametrize("m1", m_stars_1)
 @pytest.mark.parametrize("m_cluster", m_clusters)
@@ -119,7 +119,7 @@ def test_number_of_sn_from_imf_continuous(m1, m_cluster, z, snii):
     ejecta = snii.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
     n_sn_test = ejecta[idxs['N_SN']]
 
-    assert n_sn_test == pytest.approx(n_sn_true, abs=atol, rel=rtol)
+    assert n_sn_test == approx(n_sn_true, abs=0, rel=rel)
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("m1", m_stars_1)
@@ -138,8 +138,8 @@ def test_number_of_sn_from_imf_discrete(n_sn_left, m1, m_cluster, z, snii):
     n_sn_test = ejecta[idxs['N_SN']]
     n_leftover = ejecta[idxs["N_SN_left"]]
 
-    assert n_sn_test == pytest.approx(n_sn_true, abs=1, rel=0)
-    assert n_sn_test + n_leftover == pytest.approx(n_sn_true, abs=atol, rel=rtol)
+    assert n_sn_test == approx(n_sn_true, abs=1, rel=0)
+    assert n_sn_test + n_leftover == approx(n_sn_true, abs=0, rel=rel)
 
 
 @pytest.mark.parametrize("m1", m_stars_1)
@@ -197,7 +197,7 @@ def test_number_of_sn_discrete_continuous_difference(m1, m_cluster, z, snii_c, s
     n_sn_d = ejecta_d[idxs['N_SN']]
     leftover = ejecta_d[idxs["N_SN_left"]]
 
-    assert n_sn_d + leftover == pytest.approx(n_sn_c, abs=atol, rel=rtol)
+    assert n_sn_d + leftover == approx(n_sn_c, abs=0, rel=rel)
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("m1", m_stars_1)
@@ -234,7 +234,7 @@ def supernova_partition(energy, total_n_sn, sn_mass):
     for n_hn in range(total_n_sn + 1):  # need to include an all HN iteration
         n_sn = total_n_sn - n_hn
         this_E = n_sn * E_0 + n_hn * hn_energy
-        if this_E == pytest.approx(energy, abs=0, rel=1E-5):
+        if this_E == approx(energy, abs=0, rel=rel):
             return n_sn, n_hn
 
     # if we got here we did not find a match
@@ -264,7 +264,7 @@ def supernova_partition(energy, total_n_sn, sn_mass):
 @pytest.mark.parametrize("snii", sniis_all)
 def test_hn_energy(snii, m_star, true_energy):
     test_energy = snii.hn_energy_py(m_star)
-    assert test_energy == pytest.approx(true_energy, abs=0, rel=1E-10)
+    assert test_energy == approx(true_energy, abs=0, rel=rel)
 
 @pytest.mark.parametrize("snii", sniis_all)
 @pytest.mark.parametrize("m_star", np.random.uniform(20, 50, 10))
@@ -276,7 +276,7 @@ def test_hn_energy_full(snii, m_star):
 
     test_energy = snii.hn_energy_py(m_star)
     true_energy = interp(m_star)
-    assert test_energy == pytest.approx(true_energy)
+    assert test_energy == approx(true_energy, abs=0, rel=rel)
 
 @pytest.mark.parametrize("m1", m_stars_1)
 @pytest.mark.parametrize("m_cluster", m_clusters)
@@ -304,7 +304,7 @@ def test_energy_continuous(snii, m1, m_cluster, z):
     true_E = n_sn * energy
     test_E = sn_ejecta[idxs["E"]]
 
-    assert pytest.approx(true_E, abs=0, rel=1E-5) == test_E
+    assert approx(true_E, abs=0, rel=rel) == test_E
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("m1", m_stars_1)
@@ -329,7 +329,7 @@ def test_energy_discrete(n_sn_left, m1, m_cluster, z, snii):
         # this will assert False if it cannot be done
     else:  # just regular SN, easy to check
         true_E = n_sn_total * E_0
-        assert ejected_E == pytest.approx(true_E, abs=0, rel=1E-5)
+        assert ejected_E == approx(true_E, abs=0, rel=rel)
 
 # ------------------------------------------------------------------------------
 #
@@ -370,7 +370,7 @@ def test_yields_discrete(n_sn_left, m1, m_cluster, z, snii, elt):
     true_yield = n_sn * true_yields_per_sn[idxs[elt]] + \
                  n_hn * true_yields_per_hn[idxs[elt]]
 
-    assert test_yield == pytest.approx(true_yield, abs=atol, rel=rtol)
+    assert test_yield == approx(true_yield, abs=0, rel=rel)
 
 @pytest.mark.parametrize("m1", m_stars_1)
 @pytest.mark.parametrize("m_cluster", m_clusters)
@@ -402,7 +402,7 @@ def test_yields_continuous(snii, m1, m_cluster, z, elt):
     true_yield = n_sn * true_yields_per_sn[idxs[elt]] + \
                  n_hn * true_yields_per_hn[idxs[elt]]
 
-    assert test_yield == pytest.approx(true_yield, abs=atol, rel=rtol)
+    assert test_yield == approx(true_yield, abs=0, rel=rel)
 
 # ------------------------------------------------------------------------------
 #
@@ -425,7 +425,7 @@ def test_consistency_discrete(n_sn_left, m1, m_cluster, z, snii):
     sn_ejecta_ref = snii_default.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
 
     for idx in idxs.values():
-        assert sn_ejecta_test[idx] == pytest.approx(sn_ejecta_ref[idx], abs=atol, rel=rtol)
+        assert sn_ejecta_test[idx] == approx(sn_ejecta_ref[idx], abs=0, rel=rel)
 
 
 @pytest.mark.parametrize("m1", m_stars_1)
@@ -438,4 +438,4 @@ def test_consistency_continuous(m1, m_cluster, z, snii):
     sn_ejecta_ref = snii_e_i_e_c_c.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
 
     for idx in idxs.values():
-        assert sn_ejecta_test[idx] == pytest.approx(sn_ejecta_ref[idx], abs=atol, rel=rtol)
+        assert sn_ejecta_test[idx] == approx(sn_ejecta_ref[idx], abs=0, rel=rel)

@@ -48,4 +48,5 @@ def test_metal_fractions(output):
     # make sure the densities match the raw SN yield
     for elt in elts:
         this_metal_fraction = output[elt] / output["Z"]
-        assert this_metal_fraction == pytest.approx(sn_metal_fractions[elt])
+        assert this_metal_fraction == pytest.approx(sn_metal_fractions[elt],
+                                                    abs=0, rel=1E-12)

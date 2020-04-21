@@ -8,6 +8,8 @@ from pytest import approx
 from pathlib import Path
 this_dir = Path(__file__).absolute().parent
 
+rel = 1E-10
+
 def true_f_bound(eps_int):
     alpha_star = 0.48
     f_sat = 0.94
@@ -38,16 +40,17 @@ with stdout_file.open("r") as stdout:
 
 assert len(f_bound_points) > 10
 # we only need some of these
-n_tests = 100000000
+n_tests = 1000
 if len(f_bound_points) > n_tests:
     f_bound_points = random.sample(f_bound_points, n_tests)
 
 @pytest.mark.parametrize("point", f_bound_points)
 def test_eps_int(point):
     true_eps_int = point["initial_mass"] / point["star_ibound"]
-    assert true_eps_int == approx(point["eps_int"])
+    assert true_eps_int == approx(point["eps_int"], abs=0, rel=rel)
 
 @pytest.mark.parametrize("point", f_bound_points)
 def test_eps_int(point):
-    assert true_f_bound(point["eps_int"]) == approx(point["f_bound"])
+    assert true_f_bound(point["eps_int"]) == approx(point["f_bound"],
+                                                    abs=0, rel=rel)
 

@@ -5,6 +5,7 @@ this_dir = Path(__file__).absolute().parent
 sys.path.append(str(this_dir.parent.parent))
 
 import pytest
+from pytest import approx
 import numpy as np
 from scipy import interpolate, integrate
 
@@ -38,8 +39,7 @@ def is_between(x, a, b):
     else:
         return b <= x <= a
 
-r_tol = 1E-8
-a_tol = 0
+rel = 1E-4
 
 n_elements = 8
 n_returned_agb = 6
@@ -90,34 +90,34 @@ for source in ["AGB", "SN", "HN", "winds"]:
 def test_ejecta_table():
     # This checks that I read in the table correctly, and reuses the many rows
     # I copy-pasted before just reading the table directly
-    assert ejecta_table["AGB"][0.0001][1.0] == pytest.approx([0.0087079, 7.76358e-05, 0.0018352, 1.00483e-06, 0.0106379, 0.470354])
-    assert ejecta_table["AGB"][0.0001][6.0] == pytest.approx([0.00029367, 0.00236042, 0.000223907, 1.9373e-05, 0.00296963, 4.87499])
-    assert ejecta_table["AGB"][0.0001][7.0] == pytest.approx([0.0017969, 0.00801823, 0.00324965, 4.9072e-05, 0.0132547, 5.72732])
-    assert ejecta_table["AGB"][0.02][1.0] == pytest.approx([0.0013525, 0.000671261, 0.00424281, 0.00033083, 0.00797528, 0.439878])
-    assert ejecta_table["AGB"][0.02][6.0] == pytest.approx([0.0019763, 0.0411218, 0.0379833, 0.0041146, 0.101123, 5.03487])
-    assert ejecta_table["AGB"][0.02][7.0] == pytest.approx([0.002462, 0.0474643, 0.0421444, 0.0049799, 0.115856, 5.93435])
+    assert ejecta_table["AGB"][0.0001][1.0] == approx([0.0087079, 7.76358e-05, 0.0018352, 1.00483e-06, 0.0106379, 0.470354], abs=0, rel=1E-10)
+    assert ejecta_table["AGB"][0.0001][6.0] == approx([0.00029367, 0.00236042, 0.000223907, 1.9373e-05, 0.00296963, 4.87499], abs=0, rel=1E-10)
+    assert ejecta_table["AGB"][0.0001][7.0] == approx([0.0017969, 0.00801823, 0.00324965, 4.9072e-05, 0.0132547, 5.72732], abs=0, rel=1E-10)
+    assert ejecta_table["AGB"][0.02][1.0] == approx([0.0013525, 0.000671261, 0.00424281, 0.00033083, 0.00797528, 0.439878], abs=0, rel=1E-10)
+    assert ejecta_table["AGB"][0.02][6.0] == approx([0.0019763, 0.0411218, 0.0379833, 0.0041146, 0.101123, 5.03487], abs=0, rel=1E-10)
+    assert ejecta_table["AGB"][0.02][7.0] == approx([0.002462, 0.0474643, 0.0421444, 0.0049799, 0.115856, 5.93435], abs=0, rel=1E-10)
 
-    assert ejecta_table["SN"][0][13] == pytest.approx([0.0741001, 0.00183006, 0.450002, 0.0864277, 0.0240688, 0.00293784, 0.071726, 0.820768, 11.43])
-    assert ejecta_table["SN"][0][20] == pytest.approx([0.211, 5.42113e-05, 2.11, 0.150354, 0.053788, 0.00624737, 0.072287, 3.63389, 18.34])
-    assert ejecta_table["SN"][0][40] == pytest.approx([0.429, 1.218e-06, 8.38, 0.478554, 0.3754, 0.0373304, 0.080001, 11.1967, 37.11])
-    assert ejecta_table["SN"][0.02][13] == pytest.approx([0.108, 0.0480409, 0.222368, 0.02994, 0.0391454, 0.00498225, 0.087461, 0.673363, 11.13])
-    assert ejecta_table["SN"][0.02][20] == pytest.approx([0.24645, 0.072124, 1.05617, 0.09487, 0.0300352, 0.00382078, 0.093756, 2.11036, 16.81])
-    assert ejecta_table["SN"][0.02][40] == pytest.approx([0.596431, 0.0581057, 7.34327, 0.4562, 0.112995, 0.0157017, 0.089675, 11.3629, 19.62])
+    assert ejecta_table["SN"][0][13] == approx([0.0741001, 0.00183006, 0.450002, 0.0864277, 0.0240688, 0.00293784, 0.071726, 0.820768, 11.43], abs=0, rel=1E-10)
+    assert ejecta_table["SN"][0][20] == approx([0.211, 5.42113e-05, 2.11, 0.150354, 0.053788, 0.00624737, 0.072287, 3.63389, 18.34], abs=0, rel=1E-10)
+    assert ejecta_table["SN"][0][40] == approx([0.429, 1.218e-06, 8.38, 0.478554, 0.3754, 0.0373304, 0.080001, 11.1967, 37.11], abs=0, rel=1E-10)
+    assert ejecta_table["SN"][0.02][13] == approx([0.108, 0.0480409, 0.222368, 0.02994, 0.0391454, 0.00498225, 0.087461, 0.673363, 11.13], abs=0, rel=1E-10)
+    assert ejecta_table["SN"][0.02][20] == approx([0.24645, 0.072124, 1.05617, 0.09487, 0.0300352, 0.00382078, 0.093756, 2.11036, 16.81], abs=0, rel=1E-10)
+    assert ejecta_table["SN"][0.02][40] == approx([0.596431, 0.0581057, 7.34327, 0.4562, 0.112995, 0.0157017, 0.089675, 11.3629, 19.62], abs=0, rel=1E-10)
 
-    assert ejecta_table["HN"][0][20] == pytest.approx([0.19, 5.43295e-05, 2.03, 0.165317, 0.043028, 0.00489967, 0.084898, 3.38732, 18.12])
-    assert ejecta_table["HN"][0][30] == pytest.approx([0.316, 4.202e-05, 3.92, 0.217228, 0.085472, 0.00840379, 0.16384, 5.50342, 26.73])
-    assert ejecta_table["HN"][0][40] == pytest.approx([0.372, 4.044e-06, 6.32, 0.337702, 0.261935, 0.0287948, 0.26354, 8.63498, 34.47])
-    assert ejecta_table["HN"][0.02][20] == pytest.approx([0.21045, 0.072153, 0.984929, 0.08752, 0.051811, 0.0050832, 0.041134, 1.89223, 16.59])
-    assert ejecta_table["HN"][0.02][30] == pytest.approx([0.18092, 0.102015, 2.74447, 0.2135, 0.123579, 0.00955079, 0.11391, 4.41294, 21.53])
-    assert ejecta_table["HN"][0.02][40] == pytest.approx([0.490431, 0.0581426, 7.06137, 0.4466, 0.158714, 0.014751, 0.29315, 10.842, 19.17])
+    assert ejecta_table["HN"][0][20] == approx([0.19, 5.43295e-05, 2.03, 0.165317, 0.043028, 0.00489967, 0.084898, 3.38732, 18.12], abs=0, rel=1E-10)
+    assert ejecta_table["HN"][0][30] == approx([0.316, 4.202e-05, 3.92, 0.217228, 0.085472, 0.00840379, 0.16384, 5.50342, 26.73], abs=0, rel=1E-10)
+    assert ejecta_table["HN"][0][40] == approx([0.372, 4.044e-06, 6.32, 0.337702, 0.261935, 0.0287948, 0.26354, 8.63498, 34.47], abs=0, rel=1E-10)
+    assert ejecta_table["HN"][0.02][20] == approx([0.21045, 0.072153, 0.984929, 0.08752, 0.051811, 0.0050832, 0.041134, 1.89223, 16.59], abs=0, rel=1E-10)
+    assert ejecta_table["HN"][0.02][30] == approx([0.18092, 0.102015, 2.74447, 0.2135, 0.123579, 0.00955079, 0.11391, 4.41294, 21.53], abs=0, rel=1E-10)
+    assert ejecta_table["HN"][0.02][40] == approx([0.490431, 0.0581426, 7.06137, 0.4466, 0.158714, 0.014751, 0.29315, 10.842, 19.17], abs=0, rel=1E-10)
 
-    assert ejecta_table["winds"][0][50.0] == pytest.approx(0)
-    assert ejecta_table["winds"][0.001][50.0] == pytest.approx(0.002214245627)
-    assert ejecta_table["winds"][0.004][50.0] == pytest.approx(0.006691026118)
-    assert ejecta_table["winds"][0.02][50.0] == pytest.approx(0.0165242876)
-    assert ejecta_table["winds"][0.001][9.6815381955] == pytest.approx(0.00329793898)
-    assert ejecta_table["winds"][0.004][13.9215101572] == pytest.approx(0.009831741985)
-    assert ejecta_table["winds"][0.02][47.6712357817] == pytest.approx(0.01695815911)
+    assert ejecta_table["winds"][0][50.0] == approx(0, abs=0, rel=1E-10)
+    assert ejecta_table["winds"][0.001][50.0] == approx(0.002214245627, abs=0, rel=1E-10)
+    assert ejecta_table["winds"][0.004][50.0] == approx(0.006691026118, abs=0, rel=1E-10)
+    assert ejecta_table["winds"][0.02][50.0] == approx(0.0165242876, abs=0, rel=1E-10)
+    assert ejecta_table["winds"][0.001][9.6815381955] == approx(0.00329793898, abs=0, rel=1E-10)
+    assert ejecta_table["winds"][0.004][13.9215101572] == approx(0.009831741985, abs=0, rel=1E-10)
+    assert ejecta_table["winds"][0.02][47.6712357817] == approx(0.01695815911, abs=0, rel=1E-10)
 
 
 zs_agb   = sorted(list(ejecta_table["AGB"].keys()))
@@ -380,7 +380,7 @@ def test_yields_agb_m_align_z_align(core, z, m):
     true_ejecta = ejecta_table["AGB"][z][m]
     code_ejecta = core.get_yields_raw_agb_py(z, m)
     for idx in range(len(true_ejecta)):
-        assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(true_ejecta[idx], rel=rel, abs=0)
     points_passed["AGB"].append([m, z])
 
 
@@ -392,7 +392,7 @@ def test_yields_sn_ii_m_align_z_align(core, z, m):
     true_ejecta = ejecta_table["SN"][z][m]
     code_ejecta = core.get_yields_raw_sn_ii_py(z, m)
     for idx in range(len(true_ejecta)):
-        assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(true_ejecta[idx], rel=rel, abs=0)
     points_passed["SN"].append([m, z])
 
 
@@ -404,7 +404,7 @@ def test_yields_hn_ii_m_align_z_align(core, z, m):
     true_ejecta = ejecta_table["HN"][z][m]
     code_ejecta = core.get_yields_raw_hn_ii_py(z, m)
     for idx in range(len(true_ejecta)):
-        assert code_ejecta[idx] == pytest.approx(true_ejecta[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(true_ejecta[idx], rel=rel, abs=0)
     points_passed["HN"].append([m, z])
 
 @pytest.mark.parametrize("core", all_cores)
@@ -417,7 +417,7 @@ def test_yields_winds_lo_m_align_z_align(core, z, m):
     age = lt(m, z)
     age_50 = lt(50.0, z)
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
-    assert code_ejecta == pytest.approx(true_ejecta, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(true_ejecta, rel=rel, abs=0)
     points_passed["winds_lo"].append([m, z])
 
 
@@ -431,7 +431,7 @@ def test_yields_winds_hi_m_align_z_align(core, z, m):
     age = lt(m, z)
     age_50 = lt(50.0, z)
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
-    assert code_ejecta == pytest.approx(true_ejecta, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(true_ejecta, rel=rel, abs=0)
     points_passed["winds_hi"].append([m, z])
 
 
@@ -471,7 +471,7 @@ def test_yields_agb_m_align_z_interp(core, z_idx, m):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -504,7 +504,7 @@ def test_yields_sn_ii_m_align_z_interp(core, z_idx, m):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["SN"].append([m, z])
 
 
@@ -536,7 +536,7 @@ def test_yields_hn_ii_m_align_z_interp(core, z_idx, m):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["HN"].append([m, z])
 
 
@@ -567,7 +567,7 @@ def test_yields_winds_lo_m_align_z_interp(core, z_idx, m):
     interp = interpolate.interp1d(x=[z_low, z_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(z), rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -599,7 +599,7 @@ def test_yields_winds_hi_m_align_z_interp(core, z_idx, m):
     interp = interpolate.interp1d(x=[z_low, z_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(z), rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -630,7 +630,7 @@ def test_yields_agb_m_align_z_high(core, m):
     # iterate through all fields
     for idx in range(len(ejecta_max)):
         # first do sanity check that it's equal to this value
-        assert code_ejecta[idx] == pytest.approx(ejecta_max[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_max[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -654,7 +654,7 @@ def test_yields_sn_ii_m_align_z_high(core, m):
     # iterate through all fields
     for idx in range(len(ejecta_max)):
         # first do sanity check that it's equal to this value
-        assert code_ejecta[idx] == pytest.approx(ejecta_max[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_max[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -678,7 +678,7 @@ def test_yields_hn_ii_m_align_z_high(core, m):
     # iterate through all fields
     for idx in range(len(ejecta_max)):
         # first do sanity check that it's equal to this value
-        assert code_ejecta[idx] == pytest.approx(ejecta_max[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_max[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -702,7 +702,7 @@ def test_yields_winds_lo_m_align_z_high(core, m):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
-    assert code_ejecta == pytest.approx(ejecta_max, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_max, rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -726,7 +726,7 @@ def test_yields_winds_hi_m_align_z_high(core, m):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
-    assert code_ejecta == pytest.approx(ejecta_max, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_max, rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -756,7 +756,7 @@ def test_yields_agb_m_align_z_low(core, m):
     # iterate through all fields
     for idx in range(len(ejecta_min)):
         # first do sanity check that it's equal to this value
-        assert code_ejecta[idx] == pytest.approx(ejecta_min[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_min[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -780,7 +780,7 @@ def test_yields_sn_ii_m_align_z_low(core, m):
     # iterate through all fields
     for idx in range(len(ejecta_min)):
         # first do sanity check that it's equal to this value
-        assert code_ejecta[idx] == pytest.approx(ejecta_min[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_min[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -804,7 +804,7 @@ def test_yields_hn_ii_m_align_z_low(core, m):
     # iterate through all fields
     for idx in range(len(ejecta_min)):
         # first do sanity check that it's equal to this value
-        assert code_ejecta[idx] == pytest.approx(ejecta_min[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_min[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -828,7 +828,7 @@ def test_yields_winds_lo_m_align_z_low(core, m):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
-    assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_min, rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -852,7 +852,7 @@ def test_yields_winds_hi_m_align_z_low(core, m):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # first do sanity check that it's equal to this value
-    assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_min, rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -893,7 +893,7 @@ def test_yields_agb_m_interp_z_align(core, m_idx, z):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -926,7 +926,7 @@ def test_yields_sn_m_interp_z_align(core, m_idx, z):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -959,7 +959,7 @@ def test_yields_hn_m_interp_z_align(core, m_idx, z):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -992,7 +992,7 @@ def test_yields_winds_lo_m_interp_z_align(core, m_idx, z):
     interp = interpolate.interp1d(x=[m_low, m_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(m), rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -1025,7 +1025,7 @@ def test_yields_winds_hi_m_interp_z_align(core, m_idx, z):
     interp = interpolate.interp1d(x=[m_low, m_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(m), rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -1068,7 +1068,7 @@ def test_yields_agb_m_interp_z_high(core, m_idx):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -1104,7 +1104,7 @@ def test_yields_sn_m_interp_z_high(core, m_idx):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -1140,7 +1140,7 @@ def test_yields_hn_m_interp_z_high(core, m_idx):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -1176,7 +1176,7 @@ def test_yields_winds_lo_m_interp_z_high(core, m_idx):
     interp = interpolate.interp1d(x=[m_low, m_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(m), rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -1212,7 +1212,7 @@ def test_yields_winds_hi_m_interp_z_high(core, m_idx):
     interp = interpolate.interp1d(x=[m_low, m_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(m), rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -1254,7 +1254,7 @@ def test_yields_agb_m_interp_z_low(core, m_idx):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -1290,7 +1290,7 @@ def test_yields_sn_m_interp_z_low(core, m_idx):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -1326,7 +1326,7 @@ def test_yields_hn_m_interp_z_low(core, m_idx):
         interp = interpolate.interp1d(x=[m_low, m_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(m), rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -1362,7 +1362,7 @@ def test_yields_winds_lo_m_interp_z_low(core, m_idx):
     interp = interpolate.interp1d(x=[m_low, m_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(m), rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -1398,7 +1398,7 @@ def test_yields_winds_hi_m_interp_z_low(core, m_idx):
     interp = interpolate.interp1d(x=[m_low, m_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(m), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(m), rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -1431,7 +1431,7 @@ def test_yields_agb_m_low_z_align(core, z):
     # iterate through all fields
     for idx in range(len(ejecta_min)):
         # the yield will be scaled by the ratio of the masses
-        assert code_ejecta[idx] == pytest.approx(factor * ejecta_min[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(factor * ejecta_min[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -1458,7 +1458,7 @@ def test_yields_sn_ii_m_low_z_align(core, z):
     # iterate through all fields
     for idx in range(len(ejecta_min)):
         # the yield will be scaled by the ratio of the masses
-        assert code_ejecta[idx] == pytest.approx(factor * ejecta_min[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(factor * ejecta_min[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -1485,7 +1485,7 @@ def test_yields_hn_ii_m_low_z_align(core, z):
     # iterate through all fields
     for idx in range(len(ejecta_min)):
         # the yield will be scaled by the ratio of the masses
-        assert code_ejecta[idx] == pytest.approx(factor * ejecta_min[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(factor * ejecta_min[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -1509,7 +1509,7 @@ def test_yields_winds_m_low_z_align(core, z):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # The yield should be the same as the minimum mass model
-    assert code_ejecta == pytest.approx(ejecta_min, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_min, rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -1542,7 +1542,7 @@ def test_yields_agb_m_high_z_align(core, z):
     # iterate through all fields
     for idx in range(len(ejecta_max)):
         # the yield will be scaled by the ratio of the masses
-        assert code_ejecta[idx] == pytest.approx(factor * ejecta_max[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(factor * ejecta_max[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -1569,7 +1569,7 @@ def test_yields_sn_ii_m_high_z_align(core, z):
     # iterate through all fields
     for idx in range(len(ejecta_max)):
         # the yield will be scaled by the ratio of the masses
-        assert code_ejecta[idx] == pytest.approx(factor * ejecta_max[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(factor * ejecta_max[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -1596,7 +1596,7 @@ def test_yields_hn_ii_m_high_z_align(core, z):
     # iterate through all fields
     for idx in range(len(ejecta_max)):
         # the yield will be scaled by the ratio of the masses
-        assert code_ejecta[idx] == pytest.approx(factor * ejecta_max[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(factor * ejecta_max[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -1620,7 +1620,7 @@ def test_yields_winds_hi_m_high_z_align(core, z):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # the yield will be scaled by the fraction of age that has passes
-    assert code_ejecta == pytest.approx(ejecta_max * age / age_50, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_max * age / age_50, rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -1666,7 +1666,7 @@ def test_yields_agb_m_low_z_interp(core, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["AGB"].append([m, z])
 
 
@@ -1705,7 +1705,7 @@ def test_yields_sn_ii_m_low_z_interp(core, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["SN"].append([m, z])
 
 
@@ -1744,7 +1744,7 @@ def test_yields_hn_ii_m_low_z_interp(core, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["HN"].append([m, z])
 
 @pytest.mark.parametrize("core", all_cores)
@@ -1781,7 +1781,7 @@ def test_yields_winds_lo_m_low_z_interp(core, z_idx):
     interp = interpolate.interp1d(x=[z_low, z_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(z), rel=rel, abs=0)
     points_passed["winds_lo"].append([m, z])
 
 # ------------------------------------------------------------------------------
@@ -1826,7 +1826,7 @@ def test_yields_agb_m_high_z_interp(core, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["AGB"].append([m, z])
 
 
@@ -1865,7 +1865,7 @@ def test_yields_sn_ii_m_high_z_interp(core, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["SN"].append([m, z])
 
 @pytest.mark.parametrize("core", all_cores)
@@ -1903,7 +1903,7 @@ def test_yields_hn_ii_m_high_z_interp(core, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_low[idx], ejecta_high[idx]],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
     points_passed["HN"].append([m, z])
 
 
@@ -1940,7 +1940,7 @@ def test_yields_winds_hi_m_high_z_interp(core, z_idx):
     interp = interpolate.interp1d(x=[z_low, z_high],
                                   y=[ejecta_low, ejecta_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(z) * age / age_50, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(z) * age / age_50, rel=rel, abs=0)
     points_passed["winds_hi"].append([m, z])
 
 
@@ -1976,7 +1976,7 @@ def test_yields_agb_m_low_z_high(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -2006,7 +2006,7 @@ def test_yields_sn_ii_m_low_z_high(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -2035,7 +2035,7 @@ def test_yields_hn_ii_m_low_z_high(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -2064,7 +2064,7 @@ def test_yields_winds_lo_m_low_z_high(core):
 
     # At late times there are no more ejecta, since winds have stopped, so this
     # should match the endpoint
-    assert code_ejecta == pytest.approx(ejecta_true, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_true, rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -2100,7 +2100,7 @@ def test_yields_agb_m_low_z_low(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -2130,7 +2130,7 @@ def test_yields_sn_ii_m_low_z_low(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -2160,7 +2160,7 @@ def test_yields_hn_ii_m_low_z_low(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -2189,7 +2189,7 @@ def test_yields_winds_lo_m_low_z_low(core):
 
     # At late times there are no more ejecta, since winds have stopped, so this
     # should match the endpoint
-    assert code_ejecta == pytest.approx(ejecta_true, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_true, rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -2225,7 +2225,7 @@ def test_yields_agb_m_high_z_low(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -2255,7 +2255,7 @@ def test_yields_sn_ii_m_high_z_low(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -2285,7 +2285,7 @@ def test_yields_hn_ii_m_high_z_low(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -2313,7 +2313,7 @@ def test_yields_winds_hi_m_high_z_low(core):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # The ejecta is scaled by the amount of time that's passes
-    assert code_ejecta == pytest.approx(ejecta_true * age / age_50, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_true * age / age_50, rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -2349,7 +2349,7 @@ def test_yields_agb_m_high_z_high(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -2379,7 +2379,7 @@ def test_yields_sn_ii_m_high_z_high(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -2409,7 +2409,7 @@ def test_yields_hn_ii_m_high_z_high(core):
 
     # iterate through all fields
     for idx in range(len(ejecta_true)):
-        assert code_ejecta[idx] == pytest.approx(ejecta_true[idx], rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(ejecta_true[idx], rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -2437,7 +2437,7 @@ def test_yields_winds_hi_m_high_z_high(core):
     code_ejecta = core.get_cumulative_mass_winds_py(age, m, z, age_50)
 
     # The ejecta is scaled by the amount of time that's passes
-    assert code_ejecta == pytest.approx(ejecta_true * age / age_50, rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(ejecta_true * age / age_50, rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -2577,7 +2577,7 @@ def test_yields_agb_m_interp_z_interp(core, m_idx, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_z_low, ejecta_z_high],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
 
     points_passed["AGB"].append([m, z])
 
@@ -2631,7 +2631,7 @@ def test_yields_sn_ii_m_interp_z_interp(core, m_idx, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_z_low, ejecta_z_high],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
 
     points_passed["SN"].append([m, z])
 
@@ -2686,7 +2686,7 @@ def test_yields_hn_ii_m_interp_z_interp(core, m_idx, z_idx):
         interp = interpolate.interp1d(x=[z_low, z_high],
                                       y=[ejecta_z_low, ejecta_z_high],
                                       kind="linear")
-        assert code_ejecta[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert code_ejecta[idx] == approx(interp(z), rel=rel, abs=0)
 
     points_passed["HN"].append([m, z])
 
@@ -2740,7 +2740,7 @@ def test_yields_winds_lo_m_interp_z_interp(core, m_idx, z_idx):
     interp = interpolate.interp1d(x=[z_low, z_high],
                                   y=[ejecta_z_low, ejecta_z_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(z), rel=rel, abs=0)
 
     points_passed["winds_lo"].append([m, z])
 
@@ -2794,7 +2794,7 @@ def test_yields_winds_hi_m_interp_z_interp(core, m_idx, z_idx):
     interp = interpolate.interp1d(x=[z_low, z_high],
                                   y=[ejecta_z_low, ejecta_z_high],
                                   kind="linear")
-    assert code_ejecta == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+    assert code_ejecta == approx(interp(z), rel=rel, abs=0)
 
     points_passed["winds_hi"].append([m, z])
 
@@ -2863,7 +2863,7 @@ def test_interpolate_sn_ia(core, z):
                                          exact_yields_snia_solar[idx]],
                                       kind="linear")
 
-        assert yields[idx] == pytest.approx(interp(z), rel=r_tol, abs=a_tol)
+        assert yields[idx] == approx(interp(z), rel=rel, abs=0)
 
 # ------------------------------------------------------------------------------
 #
@@ -2876,7 +2876,7 @@ def test_interpolate_sn_ia(core, z):
                           [2, 1, 3, 4, 4, 4]])
 def test_interpolate_single_value(core, x, x_0, x_1, y_0, y_1, answer):
     code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
-    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
+    assert code_answer == approx(answer, rel=rel, abs=0)
 
 
 @pytest.mark.parametrize("core", all_cores)
@@ -2885,7 +2885,7 @@ def test_interpolate_single_value(core, x, x_0, x_1, y_0, y_1, answer):
                           [3, 1, 3, 0, 8, 8]])
 def test_interpolate_edge_cases(core, x, x_0, x_1, y_0, y_1, answer):
     code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
-    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
+    assert code_answer == approx(answer, rel=rel, abs=0)
 
 
 @pytest.mark.parametrize("core", all_cores)
@@ -2895,7 +2895,7 @@ def test_interpolate_edge_cases(core, x, x_0, x_1, y_0, y_1, answer):
                           [7, 5, 11, 0, 3, 1]])
 def test_interpolate_simple_positive_slope(core, x, x_0, x_1, y_0, y_1, answer):
     code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
-    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
+    assert code_answer == approx(answer, rel=rel, abs=0)
 
 
 @pytest.mark.parametrize("core", all_cores)
@@ -2905,7 +2905,7 @@ def test_interpolate_simple_positive_slope(core, x, x_0, x_1, y_0, y_1, answer):
                           [7, 5, 11, 3, 0, 2]])
 def test_interpolate_simple_negative_slope(core, x, x_0, x_1, y_0, y_1, answer):
     code_answer = core.interpolate_py(x, x_0, x_1, y_0, y_1)
-    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
+    assert code_answer == approx(answer, rel=rel, abs=0)
 
 
 @pytest.mark.parametrize("core", all_cores)
@@ -2916,7 +2916,7 @@ def test_interpolate_simple_negative_slope(core, x, x_0, x_1, y_0, y_1, answer):
                          [7.0, 8.0, 80.0, 70.0]])
 def test_extrapolate_m_low(core, m, m_edge, value_edge, answer):
     code_answer = core.extrapolate_py(m, m_edge, value_edge)
-    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
+    assert code_answer == approx(answer, rel=rel, abs=0)
 
 
 @pytest.mark.parametrize("core", all_cores)
@@ -2927,7 +2927,7 @@ def test_extrapolate_m_low(core, m, m_edge, value_edge, answer):
                          [8.0, 7.0, 70.0, 80.0]])
 def test_extrapolate_m_high(core, m, m_edge, value_edge, answer):
     code_answer = core.extrapolate_py(m, m_edge, value_edge)
-    assert code_answer == pytest.approx(answer, rel=r_tol, abs=a_tol)
+    assert code_answer == approx(answer, rel=rel, abs=0)
 
 
 # ------------------------------------------------------------------------------
@@ -2943,7 +2943,7 @@ def test_integrate_imf(core, m_low):
     c_integral = core.imf_integral_py(m_low, m_high)
     py_integral = integrate.quad(imf.normalized_dn_dm, m_low, m_high)
     abs_tol = max(1E-10, py_integral[1])
-    assert c_integral == pytest.approx(py_integral[0], rel=1E-7, abs=abs_tol)
+    assert c_integral == approx(py_integral[0], rel=1E-7, abs=abs_tol)
 
 
 # ------------------------------------------------------------------------------

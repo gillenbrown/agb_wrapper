@@ -27,6 +27,7 @@ lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50)
 
 n_tests = 10
+rel = 1E-10
 
 timesteps_all = parse_file(str(this_dir/"snii_stdout.txt"), "SNII")
 
@@ -135,7 +136,7 @@ def sn_and_hn(step):
         for n_hn in range(total_sn + 1): # have iteration with all HN
             n_sn = total_sn - n_hn
             this_E = n_sn * 1E51 + n_hn * hn_energy
-            if this_E == pytest.approx(energy_ergs, abs=0, rel=1E-5):
+            if this_E == pytest.approx(energy_ergs, abs=0, rel=rel):
                 return n_sn, n_hn
         # if we got here we didn't find an answer
         assert False
@@ -185,7 +186,8 @@ def test_turnoff_now_exact_values(step):
         assert step["m_turnoff_now"] > 70
     else:
         # require exact values
-        assert step["m_turnoff_now"] == approx(true_turnoff_mass)
+        assert step["m_turnoff_now"] == approx(true_turnoff_mass,
+                                               abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_turnoff_next_exact_values(step):
@@ -197,7 +199,8 @@ def test_turnoff_next_exact_values(step):
         assert step["m_turnoff_next"] > 70
     else:
         # require exact values
-        assert step["m_turnoff_next"] == approx(true_turnoff_mass)
+        assert step["m_turnoff_next"] == approx(true_turnoff_mass,
+                                                abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -210,14 +213,14 @@ def test_time_factor_value(step):
     # in the code this is the number of seconds in a code time unit
     factor = step["code time"]
     code_time = code_time_func(step["abox[level]"])
-    assert (1.0 * code_time).to(u.second).value == approx(factor, rel=1E-10, abs=0)
+    assert (1.0 * code_time).to(u.second).value == approx(factor, rel=rel, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_length_factor_value(step):
     # in the code this is the number of cm in a code length unit
     factor = step["code length"]
     code_length = code_length_func(step["abox[level]"])
-    assert (1.0 * code_length).to(u.cm).value == approx(factor, rel=1E-10, abs=0)
+    assert (1.0 * code_length).to(u.cm).value == approx(factor, rel=rel, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_energy_factor_value(step):
@@ -225,7 +228,7 @@ def test_energy_factor_value(step):
     factor = step["code energy"]
     code_energy = code_energy_func(step["abox[level]"])
     # broader tolerance, a^2 leaves it more vulnerable
-    assert (1.0 * code_energy).to(u.erg).value == approx(factor, rel=1E-4, abs=0)
+    assert (1.0 * code_energy).to(u.erg).value == approx(factor, rel=rel, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_energy_1E51_value(step):
@@ -247,8 +250,8 @@ def test_mass_conversion(step):
     msun = step["stellar mass Msun"]
     code = step["stellar mass code"]
 
-    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
-    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
+    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=rel)
+    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -404,7 +407,7 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=1E-5, rel=1E-5)
+    assert new_expected == approx(new, abs=0, rel=rel)
 
 
 # ==============================================================================
@@ -432,7 +435,8 @@ def test_ejected_yields(step, elt):
     mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["{} added".format(elt)])
+    assert density_ejected_code == approx(step["{} added".format(elt)],
+                                          abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -446,7 +450,8 @@ def test_sn_mass_loss(step):
     lost_mass = lost_density / step["1/vol"]
 
     expected_new_mass = old_mass - lost_mass
-    assert step["particle_mass new"] == pytest.approx(expected_new_mass)
+    assert step["particle_mass new"] == pytest.approx(expected_new_mass,
+                                                      abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_no_sn_mass_loss(step,):

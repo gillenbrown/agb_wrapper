@@ -26,6 +26,7 @@ lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50)
 
 n_tests = 10
+rel = 1E-10
 
 timesteps_all = parse_file(str(this_dir/"agb_stdout.txt"), "AGB")
 
@@ -102,13 +103,13 @@ def test_dt(step):
 @pytest.mark.parametrize("step", timesteps_all)
 def test_turnoff_now_exact_values(step):
     true_turnoff_mass = lt.turnoff_mass(step["age"], step["metallicity"])
-    assert step["m_turnoff_now"] == approx(true_turnoff_mass)
+    assert step["m_turnoff_now"] == approx(true_turnoff_mass, abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_turnoff_next_exact_values(step):
     true_turnoff_mass = lt.turnoff_mass(step["age"] + step["dt"],
                                         step["metallicity"])
-    assert step["m_turnoff_next"] == approx(true_turnoff_mass)
+    assert step["m_turnoff_next"] == approx(true_turnoff_mass, abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -129,8 +130,8 @@ def test_mass_conversion(step):
     msun = step["stellar mass Msun"]
     code = step["stellar mass code"]
 
-    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=1E-7)
-    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=1E-7)
+    assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=rel)
+    assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -143,8 +144,19 @@ def test_metallicity_range(step):
     assert 0 < step["metallicity II"] <= step["metallicity"]
     assert 0 < step["metallicity Ia"] < step["metallicity"]
     assert 0 < step["metallicity AGB"] < step["metallicity"]
+    assert 0 < step["metallicity S"] < step["metallicity"]
+    assert 0 < step["metallicity Ca"] < step["metallicity"]
+    assert 0 < step["metallicity Fe"] < step["metallicity"]
     assert 0 < step["metallicity"] < 1
 
+@pytest.mark.parametrize("step", timesteps_all)
+def test_sum_of_elements(step):
+    # the sum of the elements should be less than the total metallicity, e
+    # especially since for AGB we only get a few metallicities
+    elt_sum = step["metallicity S"] + \
+              step["metallicity Ca"] + \
+              step["metallicity Fe"]
+    assert 0 < elt_sum < step["metallicity"]
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_total_metallicity(step):
@@ -188,7 +200,7 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=1E-5, rel=1E-5)
+    assert new_expected == approx(new, abs=0, rel=rel)
 
 
 # ==============================================================================
@@ -218,7 +230,8 @@ def test_ejected_yields_directly_ejected(step, elt):
     mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["{} added".format(elt)])
+    assert density_ejected_code == approx(step["{} added".format(elt)],
+                                          abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", scaled_elts)
@@ -230,13 +243,14 @@ def test_ejected_yields_scaled(step, elt):
 
     # scale the ejecta by the metallicity of this element
     all_ejecta_agb = core_c_code.get_yields_raw_agb_py(z, m)[idxs["total"]]
-    mass_ejected = all_ejecta_agb * n_agb * step["metallicity_{}".format(elt)]
+    mass_ejected = all_ejecta_agb * n_agb * step["metallicity {}".format(elt)]
 
     # this is in stellar masses, have to convert to code masses
     mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["{} added".format(elt)])
+    assert density_ejected_code == approx(step["{} added".format(elt)],
+                                          abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_ejected_yields_metals(step, elt):
@@ -251,13 +265,14 @@ def test_ejected_yields_metals(step, elt):
     # then add each of the elements
     all_ejecta_agb = core_c_code.get_yields_raw_agb_py(z, m)[idxs["total"]]
     for elt in scaled_elts:
-        metals += all_ejecta_agb * n_agb * step["metallicity_{}".format(elt)]
+        metals += all_ejecta_agb * n_agb * step["metallicity {}".format(elt)]
 
     # this is in stellar masses, have to convert to code masses
     mass_ejected_code = (metals * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["AGB added".format(elt)])
+    assert density_ejected_code == approx(step["AGB added".format(elt)],
+                                          abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -265,12 +280,13 @@ def test_ejected_yields_metals(step, elt):
 #
 # ==============================================================================
 @pytest.mark.parametrize("step", timesteps_all)
-def test_sn_mass_loss(step):
+def test_mass_loss(step):
     old_mass = step["particle_mass current"]
     lost_density = step["total added"]
     lost_mass = lost_density / step["1/vol"]
 
     expected_new_mass = old_mass - lost_mass
-    assert step["particle_mass new"] == pytest.approx(expected_new_mass)
+    assert step["particle_mass new"] == approx(expected_new_mass,
+                                               abs=0, rel=rel)
 
 

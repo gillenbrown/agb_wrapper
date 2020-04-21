@@ -1,4 +1,5 @@
 import pytest
+from pytest import approx
 
 import numpy as np
 from scipy import integrate
@@ -32,12 +33,13 @@ for wind in all_winds:
 
 lt = tabulation.Lifetimes("Raiteri_96")
 
+rel = 1E-4
+
 # we want the possibility of having many timesteps to check against
-dts = [10**(np.random.uniform(2, 3, 1)[0]), 10**(np.random.uniform(3, 6, 1)[0])]
-dms = np.random.uniform(0.1, 10, 3)
-ages = np.random.uniform(60E6, 14E9, 3)
 m_clusters = 10**np.random.uniform(3, 8, 3)
-m_stellars = np.random.uniform(7.5, 50.5, 3)
+m_early = np.random.uniform(50.0, 120.0, 3)
+m_late = np.random.uniform(7.5, 50.0, 3)
+m_stellars = np.concatenate([m_early, m_late])
 zs = 10**np.random.uniform(-3, np.log10(0.05), 3)
 
 @pytest.mark.parametrize("m_star", m_stellars)
@@ -53,7 +55,7 @@ def test_compare_def_options_cumulative(wind, m_star, z):
 
     ejecta_ref  =  ref_func(age, m_star, z, age_50)
     ejecta_test = test_func(age, m_star, z, age_50)
-    assert ejecta_ref == pytest.approx(ejecta_test, rel=1E-5, abs=1E-15)
+    assert ejecta_ref == approx(ejecta_test, rel=rel, abs=0)
 
 
 @pytest.mark.parametrize("m_now", m_stellars)
@@ -73,7 +75,7 @@ def test_compare_elts_no_elts_timestep(m_now, z, m_cluster, wind):
 
     ejecta_ref = ref_func(age_now, age_next, m_now, m_next, m_cluster, z, age_50)
     ejecta_test = test_func(age_now, age_next, m_now, m_next, m_cluster, z, age_50)
-    assert ejecta_ref == pytest.approx(ejecta_test, rel=1E-8, abs=1E-15)
+    assert ejecta_ref == approx(ejecta_test, rel=rel, abs=0)
 
 # ==============================================================================
 #
@@ -100,7 +102,27 @@ def test_winds_calculation(z, m_now, m_cluster, wind):
     ejecta_1 = core.get_cumulative_mass_winds_py(age_next, m_next, z, age_50)
     ejecta_true = (ejecta_1 - ejecta_0) * m_cluster
 
-    assert ejecta_test == pytest.approx(ejecta_true, rel=1E-8, abs=1E-15)
+    assert ejecta_test == approx(ejecta_true, rel=rel, abs=0)
+
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("m_now", m_early)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("wind", all_winds)
+def test_winds_calculation_early_times(z, m_now, m_cluster, wind):
+    # the early times have a scale
+    func = wind.get_ejecta_winds_py
+    age_50 = lt.lifetime(50.0, z)
+    m_next = np.random.uniform(50, m_now, 1)
+
+    age_now = lt.lifetime(m_now, z)
+    age_next = lt.lifetime(m_next, z)
+
+    ejecta_test = func(age_now, age_next, m_now, m_next, m_cluster, z, age_50)
+
+    ejecta_50 = core.get_cumulative_mass_winds_py(age_50, 50, z, age_50)
+    ejecta_true = ejecta_50 * m_cluster * (age_next - age_now) / age_50
+
+    assert ejecta_test == approx(ejecta_true, rel=rel, abs=0)
 
 @pytest.mark.parametrize("m_cluster", m_clusters)
 @pytest.mark.parametrize("z", [0.03, 0.02, 0.015, 0.01, 0.004, 0.001, 0.0005,
@@ -132,5 +154,37 @@ def test_winds_conservation(m_cluster, z):
     cumulative_ejecta_true = core.get_cumulative_mass_winds_py(lt_old, 7,
                                                                z, age_50)
     cumulative_ejecta_true *= m_cluster
-    assert cumulative_ejecta == pytest.approx(cumulative_ejecta_true, rel=1E-8, abs=1E-15)
+    assert cumulative_ejecta == approx(cumulative_ejecta_true, rel=rel, abs=0)
+
+
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", [0.03, 0.02, 0.015, 0.01, 0.004, 0.001, 0.0005,
+                               0.0001, 0])
+def test_winds_conservation_up_to_50(m_cluster, z):
+    # Check that the total ejecta is the same regardless of how its split up
+    # into individual timesteps. This is slow, so we only test it on the
+    # default (which is fine because we've already validated that they're all
+    # the same
+    func = wind_default.get_ejecta_winds_py
+    age_50 = lt.lifetime(50.0, z)
+
+    ages = sorted(np.concatenate([[0],
+                                  np.random.uniform(0, age_50, 100),
+                                  [age_50]]))
+    masses = [lt.turnoff_mass(a, z) for a in ages]
+    cumulative_ejecta = 0
+    for idx in range(len(ages) - 1):
+        age_now = ages[idx]
+        age_next = ages[idx+1]
+        m_now = masses[idx]
+        m_next = masses[idx+1]
+
+        cumulative_ejecta += func(age_now, age_next, m_now, m_next, m_cluster,
+                                  z, age_50)
+
+
+    cumulative_ejecta_true = core.get_cumulative_mass_winds_py(age_50, 50,
+                                                               z, age_50)
+    cumulative_ejecta_true *= m_cluster
+    assert cumulative_ejecta == approx(cumulative_ejecta_true, rel=rel, abs=0)
 

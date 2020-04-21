@@ -1,4 +1,5 @@
 import pytest
+from pytest import approx
 
 # add directory of compiled C code to my path so it can be imported
 import sys
@@ -31,8 +32,7 @@ for snia in snias_all:
     snia.detailed_enrichment_init()
 
 # tolerances for tests
-rtol = 1E-5
-atol = 0
+rel = 1E-4
 
 # energy per SN
 E_0 = 2E51
@@ -74,7 +74,7 @@ def test_late_time_values(age, dt, z, snia):
     t_start = lt.lifetime(8.0, z)
     true = (1.6E-3 * 2.3480851917 / 0.13) * (age**(-0.13) - (age+dt)**(-0.13))
     test = snia.get_sn_ia_number_py(age, dt, t_start)
-    assert test == pytest.approx(true, abs=atol, rel=rtol)
+    assert test == approx(true, abs=0, rel=rel)
 
 # test that it integrates as expected
 @pytest.mark.parametrize("snia", snias_all)
@@ -86,7 +86,7 @@ def test_rate_integration(snia):
     # the start value of the integral doesn't matter, as long as its lower
     # than t_start
     n_sn = snia.get_sn_ia_number_py(0, t_hubble, t_start)
-    assert n_sn == pytest.approx(1.6E-3, abs=atol, rel=rtol)
+    assert n_sn == approx(1.6E-3, abs=0, rel=rel)
 
 # ------------------------------------------------------------------------------
 #
@@ -112,7 +112,7 @@ def test_number_sn_ejected_discrete(n_sn_left, age, dt, m, z, snia):
     this_e = yields[idxs["E"]]
     # get the number of supernovae
     n_sn = this_e / E_0
-    assert int(n_sn) == pytest.approx(n_sn, abs=1E-10, rel=0)
+    assert int(n_sn) == approx(n_sn, abs=1E-10, rel=0)
 
 @pytest.mark.parametrize("age", ages)
 @pytest.mark.parametrize("dt", dts)
@@ -127,7 +127,7 @@ def test_number_sn_ejected_continuous_not_discrete(age, dt, m, z, snia):
     this_e = yields[idxs["E"]]
     # get the number of supernovae
     n_sn = this_e / E_0
-    assert int(n_sn) != pytest.approx(n_sn, abs=1E-10, rel=0)
+    assert int(n_sn) != approx(n_sn, abs=1E-10, rel=0)
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("age", ages)
@@ -165,7 +165,7 @@ def test_continuous_sn_matches_rate(age, dt, m, z, snia):
     t_start = lt.lifetime(8.0, z)
     n_sn_expected = snia.get_sn_ia_number_py(age, dt, t_start) * m
     n_sn = snia.sn_ia_core_py(0, age, dt, m, z, t_start)[idxs["E"]] / E_0
-    assert n_sn == pytest.approx(n_sn_expected, rel=1E-5, abs=1E-5)
+    assert n_sn == approx(n_sn_expected, rel=rel, abs=0)
 
 
 @pytest.mark.parametrize("age", ages)
@@ -226,7 +226,7 @@ def test_discrete_continuous_difference(age, dt, m, z, snia_c, snia_d):
 
     leftover = yields_d[idxs["N_SN_left"]]
 
-    assert n_sn_d + leftover == pytest.approx(n_sn_c, abs=atol, rel=rtol)
+    assert n_sn_d + leftover == approx(n_sn_c, abs=0, rel=rel)
 
 # ------------------------------------------------------------------------------
 #
@@ -256,7 +256,7 @@ def test_ejecta_z_variation(n_sn_left, age, dt, m, z, sn):
     for elt in ["C", "N", "O", "Mg", "S", "Ca", "Fe", "Z"]:
         this_yield = yields[idxs[elt]]
         true_yield = n_sn * individual_yield[idxs[elt]]
-        assert this_yield == pytest.approx(true_yield, abs=1E-4, rel=1E-5)
+        assert this_yield == approx(true_yield, abs=0, rel=rel)
 
 # ------------------------------------------------------------------------------
 #
@@ -302,7 +302,7 @@ def test_declining_with_time_ejecta(z, snia):
         product_now = t_now **1.13 * n_sn_now
         product_next = t_next **1.13 * n_sn_next
         # With discrete SN this isn't perfect, to leave a wider relative tol
-        assert product_now == pytest.approx(product_next, abs=1E-5, rel=1E-2)
+        assert product_now == approx(product_next, abs=0, rel=1E-2)
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("age", ages)
@@ -334,8 +334,8 @@ def test_discrete_same(n_sn_left, age, dt, m, z, snia):
     yields_ref  = snia_discrete.sn_ia_core_py(n_sn_left, age, dt, m, z, t_start)
     yields_test = snia.sn_ia_core_py(n_sn_left, age, dt, m, z, t_start)
     for idx in idxs.values():
-        assert yields_ref[idx] == pytest.approx(yields_test[idx],
-                                                 rel=1E-5, abs=1E-5)
+        assert yields_ref[idx] == approx(yields_test[idx],
+                                                rel=rel, abs=0)
 
 @pytest.mark.parametrize("n_sn_left", n_sn_lefts)
 @pytest.mark.parametrize("age", ages)
@@ -348,5 +348,5 @@ def test_continuous_same(n_sn_left, age, dt, m, z, snia):
     yields_ref  = snia_continuous.sn_ia_core_py(n_sn_left, age, dt, m, z, t_start)
     yields_test = snia.sn_ia_core_py(n_sn_left, age, dt, m, z, t_start)
     for idx in idxs.values():
-        assert yields_ref[idx] == pytest.approx(yields_test[idx],
-                                                 rel=1E-5, abs=1E-5)
+        assert yields_ref[idx] == approx(yields_test[idx],
+                                                 rel=rel, abs=0)
