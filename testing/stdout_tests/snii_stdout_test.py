@@ -412,7 +412,7 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=0, rel=1E-6*added)
+    assert new_expected == approx(new, abs=0, rel=rel)
 
 
 # ==============================================================================
@@ -456,7 +456,7 @@ def test_sn_mass_loss(step):
 
     expected_new_mass = old_mass - lost_mass
     assert step["particle_mass new"] == pytest.approx(expected_new_mass,
-                                                      abs=0, rel=0.01*lost_mass)
+                                                      abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_no_sn_mass_loss(step,):

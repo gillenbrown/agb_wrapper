@@ -69,7 +69,7 @@ timesteps_all = timesteps_with_sn + timesteps_without_sn
 # Convenience functions
 #
 # ==============================================================================
-def true_snia_number(step):
+def true_n_sn(step):
     # see https://nbviewer.jupyter.org/github/gillenbrown/agb_wrapper/blob/master/testing/informal_tests/snia.ipynb
     # and
     # https://nbviewer.jupyter.org/github/gillenbrown/Tabulation/blob/master/notebooks/sn_Ia.ipynb
@@ -79,8 +79,8 @@ def true_snia_number(step):
     age_2 = step["age"] + step["dt"]
     return norm * (age_1**(-0.13) - age_2**(-0.13))
 
-def get_num_sn(step):
-    return step["energy added"] / step["energy per SN"]
+def step_n_sn(step):
+    return step["energy added"] / (step["energy per SN"] * step["1/vol"])
 
 # first define some functions to get code units based on my understanding of
 # them. This will help me make sure I'm using units correctly
@@ -224,7 +224,7 @@ def test_unexploded_sn_new_reasonable(step):
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_unexploded_sn_new_exact_no_sn(step):
-    true_sn = true_snia_number(step)
+    true_sn = true_n_sn(step)
 
     old_counter = step["unexploded_sn current"]
     new_counter = step["unexploded_sn new"]
@@ -232,7 +232,7 @@ def test_unexploded_sn_new_exact_no_sn(step):
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_unexploded_sn_new_exact(step):
-    true_sn = true_snia_number(step)
+    true_sn = true_n_sn(step)
 
     old_counter = step["unexploded_sn current"]
     new_counter = step["unexploded_sn new"]
@@ -249,16 +249,16 @@ def test_unexploded_sn_new_exact(step):
 # and then check that number
 @pytest.mark.parametrize("step", timesteps_with_sn)
 def test_integer_number_sn(step):
-    n_sn = get_num_sn(step)
+    n_sn = step_n_sn(step)
     assert int(n_sn) == approx(n_sn, abs=1E-5, rel=0)
 
 @pytest.mark.parametrize("step", timesteps_with_sn)
 def test_number(step):
-    sn_in_step = true_snia_number(step)
+    sn_in_step = true_n_sn(step)
     old_counter = step["unexploded_sn current"]
     expected_sn = (old_counter + sn_in_step) // 1
 
-    assert expected_sn == get_num_sn(step)
+    assert step_n_sn(step) == expected_sn
 
 @pytest.mark.parametrize("step", timesteps_with_sn)
 def test_cell_gas_energy_increases_with_sn(step):
@@ -326,7 +326,11 @@ def test_agb_and_snii_never_change(step, elt):
 def test_sn_increase_elements(step, elt):
     current = step["{} current".format(elt)]
     new = step["{} new".format(elt)]
-    assert current < new
+    # sometimes N addition is too small to notice
+    if elt == "N":
+        assert current <= new
+    else:
+        assert current < new
 
 @pytest.mark.parametrize("step", timesteps_with_sn)
 @pytest.mark.parametrize("elt", modified_elts)
@@ -340,7 +344,7 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=0, rel=1E-6*added)
+    assert new == approx(new_expected, abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_metals_are_total(step):
@@ -353,7 +357,7 @@ def test_metals_are_total(step):
 #
 # ==============================================================================
 # set up indices for accessing the individual yields
-idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "SNII": 7,
+idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "SNIa": 7,
         "total": 8}
 
 @pytest.mark.parametrize("step", timesteps_with_sn)
@@ -361,7 +365,7 @@ idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "SNII": 7,
 def test_ejected_yields(step, elt):
     z = step["metallicity"]
     # get the number of supernovae based on yields
-    n_sn = get_num_sn(step)
+    n_sn = step_n_sn(step)
 
     yields_snia = core_c_code.get_yields_sn_ia_py(z)[idxs[elt]]
 
@@ -370,8 +374,8 @@ def test_ejected_yields(step, elt):
     mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["{} added".format(elt)],
-                                          abs=0, rel=rel)
+    assert step["{} added".format(elt)] == approx(density_ejected_code,
+                                                  abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -386,7 +390,7 @@ def test_sn_mass_loss(step):
 
     expected_new_mass = old_mass - lost_mass
     assert step["particle_mass new"] == pytest.approx(expected_new_mass,
-                                                      abs=0, rel=0.01*lost_mass)
+                                                      abs=0, rel=0.1*lost_mass)
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_no_sn_mass_loss(step,):
