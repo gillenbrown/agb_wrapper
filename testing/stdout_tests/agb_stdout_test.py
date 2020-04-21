@@ -60,11 +60,12 @@ code_mass = u.def_unit("code_mass", 3 * H_0**2 * omega_m / (8 * np.pi * c.G) *
                        base_code_length**3)
 
 def get_stars_in_mass_range(step):
-    m_low = max(min(step["m_turnoff_next"], 50.0), 8.0)
-    m_high = max(min(step["m_turnoff_now"], 50.0), 8.0)
+    m_low = min(step["m_turnoff_next"], 8.0)
+    m_high = min(step["m_turnoff_now"], 8.0)
 
     imf.normalize(step["stellar mass Msun"])
-    return integrate.quad(imf.normalized_dn_dm, m_low, m_high)[0]
+    n_stars = integrate.quad(imf.normalized_dn_dm, m_low, m_high)[0]
+    return n_stars
 
 def get_mean_stellar_mass(step):
     return 0.5 * (step["m_turnoff_now"] + step["m_turnoff_next"])
@@ -216,7 +217,7 @@ scaled_elts = ["S", "Ca", "Fe"]
 idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "some_metals":4, "total": 5}
 
 @pytest.mark.parametrize("step", timesteps_all)
-@pytest.mark.parametrize("elt", modified_elts)
+@pytest.mark.parametrize("elt", directly_returned_elts)
 def test_ejected_yields_directly_ejected(step, elt):
     z = step["metallicity"]
     m = get_mean_stellar_mass(step)
@@ -287,6 +288,6 @@ def test_mass_loss(step):
 
     expected_new_mass = old_mass - lost_mass
     assert step["particle_mass new"] == approx(expected_new_mass,
-                                               abs=0, rel=0.01*lost_mass)
+                                               abs=0, rel=1E-6*lost_mass)
 
 
