@@ -27,7 +27,7 @@ lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50, total_mass=1.0)
 
 n_tests = 10
-rel = 1E-8
+rel = 1E-6
 
 timesteps_all = parse_file(str(this_dir/"stdout_snii.txt"), "SNII")
 
@@ -412,7 +412,7 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=0, rel=rel)
+    assert new_expected == approx(new, abs=0, rel=1E-6*added)
 
 
 # ==============================================================================
@@ -456,7 +456,7 @@ def test_sn_mass_loss(step):
 
     expected_new_mass = old_mass - lost_mass
     assert step["particle_mass new"] == pytest.approx(expected_new_mass,
-                                                      abs=0, rel=rel)
+                                                      abs=0, rel=0.01*lost_mass)
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_no_sn_mass_loss(step,):

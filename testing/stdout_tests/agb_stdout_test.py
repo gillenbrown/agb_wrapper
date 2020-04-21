@@ -26,7 +26,7 @@ lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50, total_mass=1.0)
 
 n_tests = 10
-rel = 1E-10
+rel = 1E-6
 
 timesteps_all = parse_file(str(this_dir/"stdout_agb.txt"), "AGB")
 
@@ -176,14 +176,14 @@ all_elts = modified_elts + not_modified_elts
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", not_modified_elts)
-def test_agb_and_snia_never_change(step, elt):
+def test_snii_and_snia_never_change(step, elt):
     current = step["{} current".format(elt)]
     new = step["{} new".format(elt)]
     assert current == new
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", modified_elts)
-def test_sn_increase_elements(step, elt):
+def test_increase_elements(step, elt):
     current = step["{} current".format(elt)]
     new = step["{} new".format(elt)]
     assert current < new
@@ -200,7 +200,7 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=0, rel=rel)
+    assert new_expected == approx(new, abs=0, rel=1E-6*added)
 
 
 # ==============================================================================
@@ -230,8 +230,8 @@ def test_ejected_yields_directly_ejected(step, elt):
     mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["{} added".format(elt)],
-                                          abs=0, rel=rel)
+    assert step["{} added".format(elt)] == approx(density_ejected_code,
+                                                  abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", scaled_elts)
@@ -249,11 +249,11 @@ def test_ejected_yields_scaled(step, elt):
     mass_ejected_code = (mass_ejected * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["{} added".format(elt)],
-                                          abs=0, rel=rel)
+    assert step["{} added".format(elt)] == approx(density_ejected_code,
+                                                  abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
-def test_ejected_yields_metals(step, elt):
+def test_ejected_yields_metals(step):
     z = step["metallicity"]
     m = get_mean_stellar_mass(step)
     # get the number of AGB based on the IMF
@@ -271,8 +271,8 @@ def test_ejected_yields_metals(step, elt):
     mass_ejected_code = (metals * u.Msun).to(code_mass).value
 
     density_ejected_code = mass_ejected_code * step["1/vol"]
-    assert density_ejected_code == approx(step["AGB added".format(elt)],
-                                          abs=0, rel=rel)
+    assert step["AGB added".format(elt)] == approx(density_ejected_code,
+                                                   abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -287,6 +287,6 @@ def test_mass_loss(step):
 
     expected_new_mass = old_mass - lost_mass
     assert step["particle_mass new"] == approx(expected_new_mass,
-                                               abs=0, rel=rel)
+                                               abs=0, rel=0.01*lost_mass)
 
 

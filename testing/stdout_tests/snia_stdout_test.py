@@ -25,24 +25,20 @@ snia_c_code.detailed_enrichment_init()
 lt = tabulation.Lifetimes("Raiteri_96")
 
 n_tests = 10
-rel = 1E-10
+rel = 1E-6
 
 timesteps_all = parse_file(str(this_dir/"stdout_snia.txt"), "SNIa")
 
 # then go through them and put them in a few categories to parse them more
 # carefully later
 timesteps_with_sn = []
-timesteps_good_with_sn_only = []
-timesteps_good_without_sn = []
-timesteps_early = []
+timesteps_without_sn = []
 
 for timestep in timesteps_all:
     if timestep["energy added"] > 0:
         timesteps_with_sn.append(timestep)
-    elif timestep["energy added"] == 0 and timestep["age"] < timestep["t_start"]:
-        timesteps_early.append(timestep)
-    elif timestep["energy added"] == 0 and timestep["age"] > timestep["t_start"]:
-        timesteps_good_without_sn.append(timestep)
+    elif timestep["energy added"] == 0:
+        timesteps_without_sn.append(timestep)
     else:  # should not happen!
         raise ValueError("Bad SN checks")
 
@@ -50,8 +46,7 @@ for timestep in timesteps_all:
 # we need some of each
 def test_good_amount_of_tests():
     assert len(timesteps_with_sn) >= n_tests
-    assert len(timesteps_good_without_sn) >= n_tests
-    assert len(timesteps_early) >= n_tests
+    assert len(timesteps_without_sn) >= n_tests
 
 
 # draw a random sample of these to compare against, to make tests faster
@@ -64,11 +59,9 @@ def random_sample(full_sample):
 
 
 timesteps_with_sn = random_sample(timesteps_with_sn)
-timesteps_good_without_sn = random_sample(timesteps_good_without_sn)
-timesteps_early = random_sample(timesteps_early)
+timesteps_without_sn = random_sample(timesteps_without_sn)
 
 # then make some supersets that will be useful later
-timesteps_without_sn = timesteps_good_without_sn + timesteps_early
 timesteps_all = timesteps_with_sn + timesteps_without_sn
 
 # ==============================================================================
@@ -142,7 +135,7 @@ def test_dt(step):
 @pytest.mark.parametrize("step", timesteps_all)
 def test_t_start(step):
     true_t_start = lt.lifetime(8.0, step["metallicity"])
-    assert step["start"] == approx(true_t_start, abs=0, rel=rel)
+    assert step["t_start"] == approx(true_t_start, abs=0, rel=rel)
 
 # ==============================================================================
 #
@@ -347,7 +340,11 @@ def test_actual_density_addition(step, elt):
     added = step["{} added".format(elt)]
     new_expected = current + added
     new = step["{} new".format(elt)]
-    assert new_expected == approx(new, abs=0, rel=rel)
+    assert new_expected == approx(new, abs=0, rel=1E-6*added)
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_metals_are_total(step):
+    assert step["total added"] == step["SNIa added"]
 
 
 # ==============================================================================
@@ -389,7 +386,7 @@ def test_sn_mass_loss(step):
 
     expected_new_mass = old_mass - lost_mass
     assert step["particle_mass new"] == pytest.approx(expected_new_mass,
-                                                      abs=0, rel=rel)
+                                                      abs=0, rel=0.01*lost_mass)
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
 def test_no_sn_mass_loss(step,):
