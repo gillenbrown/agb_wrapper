@@ -76,6 +76,7 @@ timesteps_early = random_sample(timesteps_early)
 # then make some supersets that will be useful later
 timesteps_with_sn = timesteps_good_with_hn_and_sn + timesteps_good_with_sn_only
 timesteps_without_sn = timesteps_good_without_sn + timesteps_early
+timesteps_without_hn = timesteps_good_with_sn_only + timesteps_without_sn
 timesteps_all = timesteps_with_sn + timesteps_without_sn
 
 
@@ -136,7 +137,7 @@ def sn_and_hn(step):
         for n_hn in range(total_sn + 1): # have iteration with all HN
             n_sn = total_sn - n_hn
             this_E = n_sn * 1E51 + n_hn * hn_energy
-            if this_E == pytest.approx(energy_ergs, abs=0, rel=rel):
+            if this_E == pytest.approx(energy_ergs, abs=0, rel=1E-4):
                 return n_sn, n_hn
         # if we got here we didn't find an answer
         assert False
@@ -228,7 +229,7 @@ def test_energy_factor_value(step):
     factor = step["code energy"]
     code_energy = code_energy_func(step["abox[level]"])
     # broader tolerance, a^2 leaves it more vulnerable
-    assert (1.0 * code_energy).to(u.erg).value == approx(factor, rel=rel, abs=0)
+    assert (1.0 * code_energy).to(u.erg).value == approx(factor, rel=1E-4, abs=0)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_energy_1E51_value(step):
@@ -459,6 +460,72 @@ def test_sn_mass_loss(step):
                                                       abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
-def test_no_sn_mass_loss(step,):
+def test_no_sn_mass_loss(step):
     assert step["particle_mass new"] == step["particle_mass current"]
 
+# ==============================================================================
+#
+# compare to output of C code
+#
+# ==============================================================================
+# set up indices for accessing the results of the SNII calculations. I cannot
+# do this with hypernovae, since there is some randomness.
+idxs_c = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "SNII": 7,
+          "total": 8, "energy": 9, "N_SN": 10, "N_SN_left": 11}
+
+@pytest.mark.parametrize("step", timesteps_without_hn)
+@pytest.mark.parametrize("elt", modified_elts)
+def test_comp_elts_to_c_code(step, elt):
+    code_mass_added = step["{} added".format(elt)] / step["1/vol"]
+
+    ejecta = snii_c_code.get_ejecta_sn_ii_py(step["unexploded_sn current"],
+                                             step["m_turnoff_now"],
+                                             step["m_turnoff_next"],
+                                             step["stellar mass Msun"],
+                                             step["metallicity"])
+    true_mass_added = ejecta[idxs_c[elt]]
+    true_mass_added = (true_mass_added * u.Msun).to(code_mass).value
+
+    assert pytest.approx(true_mass_added, abs=0, rel=rel) == code_mass_added
+
+@pytest.mark.parametrize("step", timesteps_without_hn)
+def test_comp_energy_to_c_code(step):
+    code_energy_added = step["energy added"]
+
+    energy_erg_added = code_energy_to_erg(code_energy_added, step["abox[level]"])
+
+    ejecta = snii_c_code.get_ejecta_sn_ii_py(step["unexploded_sn current"],
+                                             step["m_turnoff_now"],
+                                             step["m_turnoff_next"],
+                                             step["stellar mass Msun"],
+                                             step["metallicity"])
+    true_ergs_added = ejecta[idxs_c["energy"]]
+
+    # energy tolerance needs to be a bit bigger
+    assert pytest.approx(true_ergs_added, abs=0, rel=1E-4) == energy_erg_added
+
+@pytest.mark.parametrize("step", timesteps_without_hn)
+def test_comp_n_sn_to_c_code(step):
+    test_n_sn = step["number SN"]
+
+    ejecta = snii_c_code.get_ejecta_sn_ii_py(step["unexploded_sn current"],
+                                             step["m_turnoff_now"],
+                                             step["m_turnoff_next"],
+                                             step["stellar mass Msun"],
+                                             step["metallicity"])
+    true_n_sn = ejecta[idxs_c["N_SN"]]
+
+    assert true_n_sn == test_n_sn
+
+@pytest.mark.parametrize("step", timesteps_without_hn)
+def test_comp_n_sn_leftover_to_c_code(step):
+    test_leftover = step["unexploded_sn new"]
+
+    ejecta = snii_c_code.get_ejecta_sn_ii_py(step["unexploded_sn current"],
+                                             step["m_turnoff_now"],
+                                             step["m_turnoff_next"],
+                                             step["stellar mass Msun"],
+                                             step["metallicity"])
+    true_leftover = ejecta[idxs_c["N_SN_left"]]
+
+    assert pytest.approx(true_leftover, abs=1E-5, rel=0) == test_leftover

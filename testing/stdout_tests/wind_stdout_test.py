@@ -296,3 +296,24 @@ def test_mass_loss(step):
 
     expected_new_mass = old_mass - lost_mass
     assert step["particle_mass new"] == pytest.approx(expected_new_mass, abs=0, rel=rel)
+
+# ==============================================================================
+#
+# compare to output of C code
+#
+# ==============================================================================
+@pytest.mark.parametrize("step", timesteps_all)
+def test_comp_total_to_c_code(step):
+    code_mass_added = step["total added"] / step["1/vol"]
+
+    ejecta = wind_c_code.get_ejecta_winds_py(step["age"],
+                                             step["age"] + step["dt"],
+                                             step["m_turnoff_now"],
+                                             step["m_turnoff_next"],
+                                             step["stellar mass Msun"],
+                                             step["metallicity"],
+                                             step["age_50"])
+
+    true_mass_added = (ejecta * u.Msun).to(code_mass).value
+
+    assert pytest.approx(true_mass_added, abs=0, rel=rel) == code_mass_added

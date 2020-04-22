@@ -300,4 +300,31 @@ def test_mass_loss(step):
     assert step["particle_mass new"] == approx(expected_new_mass,
                                                abs=0, rel=rel)
 
+# ==============================================================================
+#
+# compare to output of C code
+#
+# ==============================================================================
+# set up indices for accessing the results of the AGB calculations.
+idxs_c = {"C": 0, "N": 1, "O":2, "Mg":3, "S":4, "Ca": 5, "Fe": 6, "AGB": 7,
+          "total": 8}
+
+@pytest.mark.parametrize("step", timesteps_all)
+@pytest.mark.parametrize("elt", modified_elts)
+def test_comp_elts_to_c_code(step, elt):
+    code_mass_added = step["{} added".format(elt)] / step["1/vol"]
+
+    ejecta = agb_c_code.get_ejecta_agb_py(step["m_turnoff_now"],
+                                          step["m_turnoff_next"],
+                                          step["stellar mass Msun"],
+                                          step["metallicity"],
+                                          step["metallicity S"],
+                                          step["metallicity Ca"],
+                                          step["metallicity Fe"])
+    true_mass_added = ejecta[idxs_c[elt]]
+    true_mass_added = (true_mass_added * u.Msun).to(code_mass).value
+
+    assert pytest.approx(true_mass_added, abs=0, rel=rel) == code_mass_added
+
+
 
