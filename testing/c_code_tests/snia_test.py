@@ -5,7 +5,7 @@ from pytest import approx
 import sys
 from pathlib import Path
 this_dir = Path(__file__).absolute().parent
-sys.path.append(str(this_dir.parent.parent))
+sys.path.append(str(this_dir.parent.parent/"build"))
 
 import numpy as np
 import tabulation

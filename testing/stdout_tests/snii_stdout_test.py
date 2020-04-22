@@ -8,13 +8,15 @@ from astropy import units as u
 from astropy import constants as c
 import numpy as np
 from scipy import integrate
+import yt
+yt.funcs.mylog.setLevel(50)
 
 import tabulation
 from parse_stdout import parse_file
 
 # add directory of compiled C code to my path so it can be imported
 this_dir = Path(__file__).absolute().parent
-sys.path.append(str(this_dir.parent.parent))
+sys.path.append(str(this_dir.parent.parent/"build"))
 
 from snii_enrich_ia_elts_cluster_discrete import lib as snii_c_code
 from core_enrich_ia_elts_cluster_discrete import lib as core_c_code
@@ -25,6 +27,8 @@ snii_c_code.init_rand()
 
 lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50, total_mass=1.0)
+
+ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1031.art"))
 
 n_tests = 10
 rel = 1E-6
@@ -245,6 +249,52 @@ def test_vol(step):
 @pytest.mark.parametrize("step", timesteps_all)
 def test_cluster_mass_range(step):
     assert 1 < step["stellar mass Msun"] < 1E8
+
+# When testing the units with yt, we need to be a bit loose on the tolerances,
+# since the energy factors in the output are not at the same time as the ones
+# in the stdout file, since the size of the box has changed somewhat
+@pytest.mark.parametrize("step", timesteps_all)
+def test_time_factor_with_yt(step):
+    code_time_test = step["code time"]
+    code_time_true = ds.time_unit.to("s").value
+    assert code_time_test == approx(code_time_true, abs=0, rel=1E-2)
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_length_factor_with_yt(step):
+    code_length_test = step["code length"]
+    code_length_true = ds.length_unit.to("cm").value
+    assert code_length_test == approx(code_length_true, abs=0, rel=1E-2)
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_energy_factor_with_yt(step):
+    code_energy_test = step["code energy"]
+    code_energy_true = (ds.mass_unit * ds.velocity_unit**2).to("erg").value
+    assert code_energy_test == approx(code_energy_true, abs=0, rel=1E-2)
+
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_sn_energy_with_yt(step):
+    code_energy_in_sn = step["1E51 ergs in code energy"]
+
+    erg_per_code_energy = (ds.mass_unit * ds.velocity_unit ** 2).to("erg").value
+
+    erg_in_sn = code_energy_in_sn * erg_per_code_energy
+    assert erg_in_sn == approx(1E51, abs=0, rel=1E-2)
+
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_mass_conversion_with_yt(step):
+    msun_raw = step["stellar mass Msun"]
+    code_raw = step["stellar mass code"]
+
+    msun_yt = ds.quan(msun_raw, "Msun")
+    code_yt = ds.quan(code_raw, "code_mass")
+
+    assert code_yt.to("code_mass").value == approx(code_raw, abs=0, rel=rel)
+    assert msun_yt.to("code_mass").value == approx(code_raw, abs=0, rel=rel)
+
+    assert code_yt.to("Msun").value == approx(msun_raw, abs=0, rel=rel)
+    assert msun_yt.to("Msun").value == approx(msun_raw, abs=0, rel=rel)
 
 @pytest.mark.parametrize("step", timesteps_all)
 def test_mass_conversion(step):

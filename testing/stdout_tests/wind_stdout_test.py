@@ -8,13 +8,15 @@ from astropy import units as u
 from astropy import constants as c
 import numpy as np
 from scipy import integrate
+import yt
+yt.funcs.mylog.setLevel(50)
 
 import tabulation
 from parse_stdout import parse_file
 
 # add directory of compiled C code to my path so it can be imported
 this_dir = Path(__file__).absolute().parent
-sys.path.append(str(this_dir.parent.parent))
+sys.path.append(str(this_dir.parent.parent/"build"))
 
 from wind_enrich_ia_elts_cluster_discrete import lib as wind_c_code
 from core_enrich_ia_elts_cluster_discrete import lib as core_c_code
@@ -23,6 +25,8 @@ core_c_code.detailed_enrichment_init()
 wind_c_code.detailed_enrichment_init()
 
 lt = tabulation.Lifetimes("Raiteri_96")
+
+ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1031.art"))
 
 n_tests = 10
 rel = 1E-6
@@ -166,6 +170,23 @@ def test_mass_conversion(step):
 
     assert (msun * u.Msun).to(code_mass).value == approx(code, abs=0, rel=rel)
     assert (code * code_mass).to(u.Msun).value == approx(msun, abs=0, rel=rel)
+
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_mass_conversion_with_yt(step):
+    msun_raw = step["stellar mass Msun"]
+    code_raw = step["stellar mass code"]
+
+    msun_yt = ds.quan(msun_raw, "Msun")
+    code_yt = ds.quan(code_raw, "code_mass")
+
+    assert code_yt.to("code_mass").value == approx(code_raw, abs=0, rel=rel)
+    assert msun_yt.to("code_mass").value == approx(code_raw, abs=0, rel=rel)
+
+    assert code_yt.to("Msun").value == approx(msun_raw, abs=0, rel=rel)
+    assert msun_yt.to("Msun").value == approx(msun_raw, abs=0, rel=rel)
+
+
 
 # ==============================================================================
 #

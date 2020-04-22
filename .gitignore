@@ -3,9 +3,12 @@
 *.o
 art_enrich.*
 testing/plots/*
+testing/stdout_tests/art_dataset
+testing/stdout_tests/stdout_debug
 
-# Pycharm stuff
+# IDE stuff
 .idea/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -10,7 +10,7 @@ import tabulation
 import sys
 from pathlib import Path
 this_dir = Path(__file__).absolute().parent
-sys.path.append(str(this_dir.parent.parent))
+sys.path.append(str(this_dir.parent.parent/"build"))
 
 from wind_enrich_ia_elts_cluster_discrete import lib as wind_default
 from wind_enrich_ia_elts_cluster import lib as wind_e_i_e_c_c

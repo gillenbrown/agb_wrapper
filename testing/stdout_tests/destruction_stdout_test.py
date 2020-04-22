@@ -40,7 +40,7 @@ with stdout_file.open("r") as stdout:
 
 assert len(f_bound_points) > 10
 # we only need some of these
-n_tests = 1000
+n_tests = 10
 if len(f_bound_points) > n_tests:
     f_bound_points = random.sample(f_bound_points, n_tests)
 

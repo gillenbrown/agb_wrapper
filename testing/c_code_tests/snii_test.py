@@ -10,7 +10,7 @@ import tabulation
 import sys
 from pathlib import Path
 this_dir = Path(__file__).absolute().parent
-sys.path.append(str(this_dir.parent.parent))
+sys.path.append(str(this_dir.parent.parent/"build"))
 
 from snii_enrich_ia_elts_cluster_discrete import lib as snii_default
 from snii_enrich_ia_elts_cluster import lib as snii_e_i_e_c_c
