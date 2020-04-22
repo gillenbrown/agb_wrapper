@@ -290,7 +290,7 @@ def test_cell_gas_pressure_increases_with_sn(step):
     assert step["cell_gas_pressure new"] > step["cell_gas_pressure current"]
 
 @pytest.mark.parametrize("step", timesteps_without_sn)
-def test_cell_gas_internal_energy_unchanged_with_no_sn(step):
+def test_cell_gas_pressure_unchanged_with_no_sn(step):
     assert step["cell_gas_pressure new"] == step["cell_gas_pressure current"]
 
 # ==============================================================================

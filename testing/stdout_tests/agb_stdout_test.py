@@ -173,7 +173,11 @@ def test_total_metallicity(step):
 # ==============================================================================
 modified_elts = ["C", "N", "O", "Mg", "S", "Ca", "Fe", "AGB", "total"]
 not_modified_elts = ["SNII", "SNIa"]
+directly_returned_elts = ["C", "N", "O", "Mg", "total"]
+scaled_elts = ["S", "Ca", "Fe"]
 all_elts = modified_elts + not_modified_elts
+# set up indices for accessing the individual yields
+idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "some_metals":4, "total": 5}
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", not_modified_elts)
@@ -183,11 +187,20 @@ def test_snii_and_snia_never_change(step, elt):
     assert current == new
 
 @pytest.mark.parametrize("step", timesteps_all)
-@pytest.mark.parametrize("elt", modified_elts)
-def test_increase_elements(step, elt):
+@pytest.mark.parametrize("elt", directly_returned_elts)
+def test_increase_directly_returned_elements(step, elt):
     current = step["{} current".format(elt)]
     new = step["{} new".format(elt)]
     assert current < new
+
+@pytest.mark.parametrize("step", timesteps_all)
+@pytest.mark.parametrize("elt", directly_returned_elts)
+def test_increase_scaled_elements(step, elt):
+    # sometimes these additions are tiny, so aren't big enough to move the
+    # floating point representation
+    current = step["{} current".format(elt)]
+    new = step["{} new".format(elt)]
+    assert current <= new
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", modified_elts)
@@ -211,10 +224,7 @@ def test_actual_density_addition(step, elt):
 # ==============================================================================
 # This also checks the IMF integration, since we need to know how many start
 # left the main sequence to correctly get the yields
-# set up indices for accessing the individual yields
-directly_returned_elts = ["C", "N", "O", "Mg", "total"]
-scaled_elts = ["S", "Ca", "Fe"]
-idxs = {"C": 0, "N": 1, "O":2, "Mg":3, "some_metals":4, "total": 5}
+
 
 @pytest.mark.parametrize("step", timesteps_all)
 @pytest.mark.parametrize("elt", directly_returned_elts)
