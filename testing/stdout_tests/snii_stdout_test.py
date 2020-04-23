@@ -28,7 +28,7 @@ snii_c_code.init_rand()
 lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50, total_mass=1.0)
 
-ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1031.art"))
+ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1044.art"))
 
 n_tests = 10
 rel = 1E-6
@@ -146,6 +146,8 @@ def sn_and_hn(step):
         # if we got here we didn't find an answer
         assert False
 
+def get_true_hn_fraction(z):
+    return max(0.5 * np.exp(-z/0.001), 0.001)
 
 # ==============================================================================
 #
@@ -354,6 +356,17 @@ def test_unexploded_sn_new_exact(step):
     new_counter = step["unexploded_sn new"]
     correct_counter = (old_counter + n_stars) % 1.0
     assert new_counter == approx(correct_counter, abs=1E-5, rel=0)
+
+# ==============================================================================
+#
+# HN fraction
+#
+# ==============================================================================
+@pytest.mark.parametrize("step", timesteps_all)
+def test_hn_fraction(step):
+    test_f_hn = step["hn_fraction"]
+    true_f_hn = get_true_hn_fraction(step["metallicity"])
+    assert test_f_hn == approx(true_f_hn, abs=1E-5, rel=0)
 
 # ==============================================================================
 #

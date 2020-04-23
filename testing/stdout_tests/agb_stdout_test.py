@@ -29,7 +29,7 @@ agb_c_code.detailed_enrichment_init()
 lt = tabulation.Lifetimes("Raiteri_96")
 imf = tabulation.IMF("Kroupa", 0.08, 50, total_mass=1.0)
 
-ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1031.art"))
+ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1044.art"))
 
 n_tests = 10
 rel = 1E-6

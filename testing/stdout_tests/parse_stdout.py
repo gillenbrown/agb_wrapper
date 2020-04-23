@@ -3,7 +3,7 @@ from collections import defaultdict
 
 
 class star_ejecta(object):
-    complete_values = {"SNII": 68,
+    complete_values = {"SNII": 69,
                        "SNIa": 65,
                        "wind": 61,
                        "AGB":  54}
