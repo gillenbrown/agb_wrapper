@@ -406,6 +406,131 @@ def test_yields_continuous(snii, m1, m_cluster, z, elt):
 
 # ------------------------------------------------------------------------------
 #
+# Elemental yields with modifying HN fraction
+#
+# ------------------------------------------------------------------------------
+@pytest.mark.parametrize("hn_fraction", np.random.uniform(0, 1, 2))
+@pytest.mark.parametrize("snii", sniis_all)
+def test_yields_discrete_no_hn(snii, hn_fraction):
+    snii.set_hn_fraction_py(hn_fraction)
+    assert snii.get_hn_fraction_py() == hn_fraction
+    snii.set_hn_fraction_py(0.5)  # back to default value
+
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+@pytest.mark.parametrize("elt", elts)
+def test_yields_discrete_no_hn(n_sn_left, m1, m_cluster, z, snii, elt):
+    # check the individual yields, which we do by comparing to the yield table
+    # which we've already validated. Discrete has to do the thing to see how
+    # many SN and HN there are
+    snii.set_hn_fraction_py(0.0)
+    n_sn_total = 0
+    while n_sn_total == 0:
+        this_m2 = m2(m1)
+        sn_ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+        n_sn_total = int(sn_ejecta[idxs["N_SN"]])
+
+    # get the energy at the mass leaving halfway through the timestep
+    mass = 0.5 * (m1 + this_m2)
+
+    true_yields_per_sn = core.get_yields_raw_sn_ii_py(z, mass)
+
+    test_yield = sn_ejecta[idxs[elt]]
+    true_yield = n_sn_total * true_yields_per_sn[idxs[elt]]
+
+    assert test_yield == approx(true_yield, abs=0, rel=rel)
+
+    snii.set_hn_fraction_py(0.5)
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_continuous)
+@pytest.mark.parametrize("elt", elts)
+def test_yields_continuous_no_hn(snii, m1, m_cluster, z, elt):
+    snii.set_hn_fraction_py(0.0)
+    this_m2 = m2(m1)
+    sn_ejecta = snii.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    n_sn_total = sn_ejecta[idxs["N_SN"]]
+
+    assert n_sn_total > 0
+
+    # get the energy at the mass leaving halfway through the timestep
+    # if we have HN, the energy is weighted exactly halfway between the two
+    mass = 0.5 * (m1 + this_m2)
+
+    true_yields_per_sn = core.get_yields_raw_sn_ii_py(z, mass)
+
+    test_yield = sn_ejecta[idxs[elt]]
+    true_yield = n_sn_total * true_yields_per_sn[idxs[elt]]
+
+    assert test_yield == approx(true_yield, abs=0, rel=rel)
+    snii.set_hn_fraction_py(0.5)
+
+@pytest.mark.parametrize("n_sn_left", n_sn_lefts)
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_discrete)
+@pytest.mark.parametrize("elt", elts)
+def test_yields_discrete_all_hn(n_sn_left, m1, m_cluster, z, snii, elt):
+    # check the individual yields, which we do by comparing to the yield table
+    # which we've already validated. Discrete has to do the thing to see how
+    # many SN and HN there are
+    snii.set_hn_fraction_py(1.0)
+    n_sn_total = 0
+    while n_sn_total == 0:
+        this_m2 = m2(m1)
+        sn_ejecta = snii.get_ejecta_sn_ii_py(n_sn_left, m1, this_m2, m_cluster, z)
+        n_sn_total = int(sn_ejecta[idxs["N_SN"]])
+
+    # get the energy at the mass leaving halfway through the timestep
+    mass = 0.5 * (m1 + this_m2)
+    if mass > 20.0:  # we have HN
+        true_yields_per_sn = core.get_yields_raw_hn_ii_py(z, mass)
+    else:  # just regular SN, easy to check
+        true_yields_per_sn = core.get_yields_raw_sn_ii_py(z, mass)
+
+    true_yield = n_sn_total * true_yields_per_sn[idxs[elt]]
+    test_yield = sn_ejecta[idxs[elt]]
+
+    assert test_yield == approx(true_yield, abs=0, rel=rel)
+    snii.set_hn_fraction_py(0.5)
+
+@pytest.mark.parametrize("m1", m_stars_1)
+@pytest.mark.parametrize("m_cluster", m_clusters)
+@pytest.mark.parametrize("z", zs)
+@pytest.mark.parametrize("snii", sniis_continuous)
+@pytest.mark.parametrize("elt", elts)
+def test_yields_continuous_all_hn(snii, m1, m_cluster, z, elt):
+    snii.set_hn_fraction_py(1.0)
+    this_m2 = m2(m1)
+    sn_ejecta = snii.get_ejecta_sn_ii_py(0, m1, this_m2, m_cluster, z)
+    n_sn_total = sn_ejecta[idxs["N_SN"]]
+
+    assert n_sn_total > 0
+
+    # get the energy at the mass leaving halfway through the timestep
+    # if we have HN, the energy is weighted exactly halfway between the two
+    mass = 0.5 * (m1 + this_m2)
+
+    if mass > 20:
+        true_yields_per_sn = core.get_yields_raw_hn_ii_py(z, mass)
+    else:
+        true_yields_per_sn = core.get_yields_raw_sn_ii_py(z, mass)
+
+    test_yield = sn_ejecta[idxs[elt]]
+    true_yield = n_sn_total * true_yields_per_sn[idxs[elt]]
+
+    assert test_yield == approx(true_yield, abs=0, rel=rel)
+    snii.set_hn_fraction_py(0.5)
+
+
+# ------------------------------------------------------------------------------
+#
 # Test that there is no difference amongst the discrete and among the
 # continuous. We'll compare to the one with all defines
 #
