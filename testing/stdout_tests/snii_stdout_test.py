@@ -509,6 +509,46 @@ def test_ejected_yields(step, elt):
 
 # ==============================================================================
 #
+# H and He
+#
+# ==============================================================================
+he_fraction = 0.24
+h_fraction  = 1.0 - he_fraction
+# then correct for the 4 nucleons, which matters to ART
+he_fraction *= 0.25
+
+@pytest.mark.parametrize("step", timesteps_all)
+@pytest.mark.parametrize("field", ["HI", "H2", "HeI", "HeII"])
+def test_no_change_unionized_h_he(step, field):
+    current = step["{} current".format(field)]
+    new = step["{} new".format(field)]
+    assert current == new
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_HII_change(step):
+    current = step["HII current"]
+    new = step["HII new"]
+    # actual injected H is the total minus the metals added
+    non_metals = step["total added"] - step["SNII added"]
+    h_added = non_metals * h_fraction
+    correct_new = current + h_added
+
+    assert new == approx(correct_new, abs=0, rel=rel)
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_HeIII_change(step):
+    current = step["HeIII current"]
+    new = step["HeIII new"]
+    # actual injected H is the total minus the metals added
+    non_metals = step["total added"] - step["SNII added"]
+    he_added = non_metals * he_fraction
+    correct_new = current + he_added
+
+    assert new == approx(correct_new, abs=0, rel=rel)
+
+
+# ==============================================================================
+#
 # Particle mass loss
 #
 # ==============================================================================

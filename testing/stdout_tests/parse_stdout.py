@@ -3,10 +3,10 @@ from collections import defaultdict
 
 
 class star_ejecta(object):
-    complete_values = {"SNII": 69,
-                       "SNIa": 65,
-                       "wind": 61,
-                       "AGB":  54}
+    complete_values = {"SNII": 81,
+                       "SNIa": 77,
+                       "wind": 73,
+                       "AGB":  66}
 
     def __init__(self, id, time, source):
         self.id = id
@@ -65,6 +65,3 @@ def parse_file(stdout_file, source):
 
         # we're now through the file, so return what we have
         return complete_stars
-
-if __name__ == "__main__":
-    parse_file(1E10)
