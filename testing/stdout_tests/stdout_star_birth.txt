@@ -1,0 +1,192 @@
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, particle_mass=5.35104656592011452e-04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity SNII=2.48044868931174278e-03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity SNIa=9.09629889065399766e-05
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity AGB=3.75035997421946377e-05
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity C=1.33898225612938404e-04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity N=2.71946482826024294e-05
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity O=1.61007919814437628e-03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity Mg=1.30874192109331489e-04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity S=6.65731204207986593e-05
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity Ca=8.44148962642066181e-06
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, star metallicity Fe=1.32460918393917382e-04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, 1/vol=1.34217728000000000e+08
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, total current=2.65008160000000000e+07
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, total Z current=6.91383828125000000e+04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, SNII current=6.57339140625000000e+04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, SNIa current=2.41059350585937500e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, AGB current=9.93875976562500000e+02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, C current=3.54841235351562500e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, N current=7.20680358886718750e+02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, O current=4.26684140625000000e+04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, Mg current=3.46827294921875000e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, S current=1.76424206542968750e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, Ca current=2.23706375122070312e+02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, Fe current=3.51032250976562500e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HI current=7.27845077514648438e+01
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HII current=3.59359955787658691e+00
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, H2 current=1.00702720000000000e+07
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HeI current=1.59004087500000000e+06
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HeII current=2.56361383944749832e-02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HeIII current=8.03618240356445312e+00
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, total new=2.64289960000000000e+07
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, total Z new=6.89510078125000000e+04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, SNII new=6.55557656250000000e+04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, SNIa new=2.40406054687500000e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, AGB new=9.91182495117187500e+02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, C new=3.53879589843750000e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, N new=7.18727233886718750e+02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, O new=4.25527773437500000e+04
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, Mg new=3.45887353515625000e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, S new=1.75946081542968750e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, Ca new=2.23100112915039062e+02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, Fe new=3.50080908203125000e+03
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HI new=7.25872573852539062e+01
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HII new=3.58386063575744629e+00
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, H2 new=1.00429810000000000e+07
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HeI new=1.58573175000000000e+06
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HeII new=2.55666617304086685e-02
+0: > . . . . : . . . . detail_debug, 2107725, star_birth, t=1.01172852783794117e+09, HeIII new=8.01440334320068359e+00
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, particle_mass=5.73684344999492168e-04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity SNII=2.45867297053337097e-03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity SNIa=8.98834405234083533e-05
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity AGB=3.70280722563620657e-05
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity C=1.32799337734468281e-04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity N=2.69067659246502444e-05
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity O=1.59567291848361492e-03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity Mg=1.29767417092807591e-04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity S=6.60075093037448823e-05
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity Ca=8.36869003251194954e-06
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, star metallicity Fe=1.31341512314975262e-04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, 1/vol=1.34217728000000000e+08
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, total current=2.77598640000000000e+07
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, total Z current=7.17754687500000000e+04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, SNII current=6.82524296875000000e+04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, SNIa current=2.49515209960937500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, AGB current=1.02789428710937500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, C current=3.68649169921875000e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, N current=7.46928161621093750e+02
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, O current=4.42956640625000000e+04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, Mg current=3.60232592773437500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, S current=1.83235949707031250e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, Ca current=2.32313705444335938e+02
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, Fe current=3.64602270507812500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HI current=2.47020893096923828e+01
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HII current=5.84825563430786133e+00
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, H2 current=1.05487330000000000e+07
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HeI current=1.66556525000000000e+06
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HeII current=2.33007177710533142e-01
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HeIII current=2.63827743530273438e+01
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, total new=2.76828660000000000e+07
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, total Z new=7.15763984375000000e+04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, SNII new=6.80631171875000000e+04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, SNIa new=2.48823120117187500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, AGB new=1.02504321289062500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, C new=3.67626635742187500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, N new=7.44856384277343750e+02
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, O new=4.41728007812500000e+04
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, Mg new=3.59233422851562500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, S new=1.82727709960937500e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, Ca new=2.31669342041015625e+02
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, Fe new=3.63590966796875000e+03
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HI new=2.46335735321044922e+01
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HII new=5.83203411102294922e+00
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, H2 new=1.05194740000000000e+07
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HeI new=1.66094550000000000e+06
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HeII new=2.32360884547233582e-01
+0: > . . . . : . . . . detail_debug, 2107726, star_birth, t=1.01173466624149632e+09, HeIII new=2.63095970153808594e+01
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, particle_mass=4.23241639509797096e-04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity SNII=2.43808515369892120e-03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity SNIa=8.97572390385903418e-05
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity AGB=3.69161498383618891e-05
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity C=1.31704000523313880e-04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity N=2.68332387349801138e-05
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity O=1.58228399232029915e-03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity Mg=1.28709070850163698e-04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity S=6.55032781651243567e-05
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity Ca=8.30626322567695752e-06
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, star metallicity Fe=1.30866435938514769e-04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, 1/vol=1.34217728000000000e+08
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, total current=2.26653280000000000e+07
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, total Z current=5.81310937500000000e+04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, SNII current=5.52600000000000000e+04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, SNIa current=2.03437719726562500e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, AGB current=8.36716613769531250e+02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, C current=2.98511425781250000e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, N current=6.08184143066406250e+02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, O current=3.58629843750000000e+04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, Mg current=2.91723339843750000e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, S current=1.48465332031250000e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, Ca current=1.88264175415039062e+02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, Fe current=2.96613061523437500e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HI current=9.04047679901123047e+00
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HII current=6.51237607002258301e-01
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, H2 current=8.61282000000000000e+06
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HeI current=1.35991312500000000e+06
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HeII current=1.83581896126270294e-02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HeIII current=6.55562210083007812e+00
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, total new=2.26085220000000000e+07
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, total Z new=5.79853984375000000e+04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, SNII new=5.51215000000000000e+04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, SNIa new=2.02927844238281250e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, AGB new=8.34619567871093750e+02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, C new=2.97763256835937500e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, N new=6.06659851074218750e+02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, O new=3.57731015625000000e+04
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, Mg new=2.90992187500000000e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, S new=1.48093225097656250e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, Ca new=1.87792327880859375e+02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, Fe new=2.95869653320312500e+03
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HI new=9.01781845092773438e+00
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HII new=6.49605393409729004e-01
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, H2 new=8.59123400000000000e+06
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HeI new=1.35650475000000000e+06
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HeII new=1.83121785521507263e-02
+0: > . . . . : . . . . detail_debug, 2107727, star_birth, t=1.01173773544327390e+09, HeIII new=6.53919172286987305e+00
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, particle_mass=5.67595183383673429e-04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity SNII=2.45640985667705536e-03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity SNIa=9.08601068658754230e-05
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity AGB=3.74132941942662001e-05
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity C=1.32809116621501744e-04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity N=2.70572163572069257e-05
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity O=1.59422005526721478e-03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity Mg=1.29687876324169338e-04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity S=6.60049408907070756e-05
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity Ca=8.37112929730210453e-06
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, star metallicity Fe=1.31805776618421078e-04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, 1/vol=1.34217728000000000e+08
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, total current=2.75633360000000000e+07
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, total Z current=7.12424921875000000e+04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, SNII current=6.77068515625000000e+04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, SNIa current=2.50440771484375000e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, AGB current=1.03123522949218750e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, C current=3.66066210937500000e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, N current=7.45787170410156250e+02
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, O current=4.39420234375000000e+04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, Mg current=3.57463061523437500e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, S current=1.81931628417968750e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, Ca current=2.30736251831054688e+02
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, Fe current=3.63300683593750000e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HI current=1.97902164459228516e+01
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HII current=1.23236503601074219e+01
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, H2 current=1.04740510000000000e+07
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HeI current=1.65375325000000000e+06
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HeII current=8.07807445526123047e-01
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HeIII current=4.61208496093750000e+01
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, total new=2.74871540000000000e+07
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, total Z new=7.10455859375000000e+04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, SNII new=6.75197187500000000e+04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, SNIa new=2.49748583984375000e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, AGB new=1.02838500976562500e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, C new=3.65054443359375000e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, N new=7.43725891113281250e+02
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, O new=4.38205742187500000e+04
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, Mg new=3.56475073242187500e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, S new=1.81428796386718750e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, Ca new=2.30098526000976562e+02
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, Fe new=3.62296557617187500e+03
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HI new=1.97355194091796875e+01
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HII new=1.22895898818969727e+01
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, H2 new=1.04451020000000000e+07
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HeI new=1.64918250000000000e+06
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HeII new=8.05574774742126465e-01
+0: > . . . . : . . . . detail_debug, 2107728, star_birth, t=1.01174387384682870e+09, HeIII new=4.59933776855468750e+01

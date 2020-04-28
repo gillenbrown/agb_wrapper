@@ -5,8 +5,10 @@ from collections import defaultdict
 class star_ejecta(object):
     complete_values = {"SNII": 81,
                        "SNIa": 77,
-                       "wind": 73,
-                       "AGB":  66}
+                       "wind": 75,
+                       "AGB":  66,
+                       "star_birth": 51,
+                       "star_growth": 63}
 
     def __init__(self, id, time, source):
         self.id = id

@@ -26,7 +26,7 @@ wind_c_code.detailed_enrichment_init()
 
 lt = tabulation.Lifetimes("Raiteri_96")
 
-ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1044.art"))
+ds = yt.load(str(this_dir/"art_dataset/continuous_a0.1507.art"))
 
 n_tests = 10
 rel = 1E-6
@@ -385,3 +385,41 @@ def test_comp_total_to_c_code(step):
     true_mass_added = (ejecta * u.Msun).to(code_mass).value
 
     assert pytest.approx(true_mass_added, abs=0, rel=rel) == code_mass_added
+
+
+# ==============================================================================
+#
+# test cell total metallicity
+#
+# ==============================================================================
+# this should not be affected by the winds, it's more of a test of the internal
+# metallicity functions I've defined
+@pytest.mark.parametrize("step", timesteps_all)
+def test_total_gas_metallicity_before(step):
+    z_old_test = step["total Z current"]
+    z_old_true = step["SNII current"] + \
+                 step["SNIa current"] + \
+                 step["AGB current"]
+
+    assert pytest.approx(z_old_true, abs=0, rel=rel) == z_old_test
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_total_gas_metallicity_after(step):
+    z_new_test = step["total Z new"]
+    z_new_true = step["SNII new"] + \
+                 step["SNIa new"] + \
+                 step["AGB new"]
+
+    assert pytest.approx(z_new_true, abs=0, rel=rel) == z_new_test
+
+@pytest.mark.parametrize("step", timesteps_all)
+def test_total_gas_metallicity_difference(step):
+    z_old = step["total Z current"]
+    z_diff = step["SNII added"] + \
+             step["SNIa added"] + \
+             step["AGB added"]
+
+    z_new_true = z_old + z_diff
+    z_new_test = step["total Z new"]
+
+    assert pytest.approx(z_new_true, abs=0, rel=rel) == z_new_test
