@@ -2804,10 +2804,10 @@ def test_yields_winds_hi_m_interp_z_interp(core, m_idx, z_idx):
 #
 # ------------------------------------------------------------------------------
 # first get the exact yields
-exact_yields_snia_01_solar = [0.0667, 1.3983e-08, 0.0995, 0.00868375, 0.076732,
-                              0.0142031, 0.882064, 1.38398]
-exact_yields_snia_solar = [0.0475001, 1.10546e-05, 0.0500047, 0.0048054,
-                           0.0818503, 0.00969994, 0.899624, 1.37164]
+exact_yields_snia_01_solar = [0.0544, 1.4911e-08, 0.135, 0.00974574, 0.083133,
+                              0.0174157, 0.827832, 1.3717]
+exact_yields_snia_solar = [0.052, 1.091e-09, 0.185, 0.0043016, 0.0805773,
+                           0.0115359, 0.803146, 1.41159]
 
 # the yields only depend on metallicity, so we only have to test a few ranges
 @pytest.mark.parametrize("core", all_cores)
